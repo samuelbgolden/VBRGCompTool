@@ -1,4 +1,4 @@
-from tkinter import StringVar, END, ACTIVE, Entry, Listbox
+from tkinter import Entry, StringVar, Listbox, ACTIVE, END, Frame, Button, IntVar, Label
 import re
 
 
@@ -34,78 +34,142 @@ class EntryWithPlaceholder(Entry):
 
 
 class AutocompleteEntry(Entry):
-    def __init__(self, lista, *args, **kwargs):
+    def __init__(self, master=None, autocompleteList=None, *args, **kwargs):
 
-        Entry.__init__(self, *args, **kwargs)
-        self.lista = lista
+        # Listbox length
+        if 'listboxLength' in kwargs:
+            self.listboxLength = kwargs['listboxLength']
+            del kwargs['listboxLength']
+        else:
+            self.listboxLength = 8
+
+        # Custom matches function
+        if 'matchesFunction' in kwargs:
+            self.matchesFunction = kwargs['matchesFunction']
+            del kwargs['matchesFunction']
+        else:
+            def matches(fieldValue, acListEntry):
+                pattern = re.compile('.*' + re.escape(fieldValue) + '.*', re.IGNORECASE)
+                return re.match(pattern, acListEntry)
+
+            self.matchesFunction = matches
+
+        Entry.__init__(self, master, *args, **kwargs)
+        self.focus()
+
+        self.autocompleteList = autocompleteList
+
         self.var = self["textvariable"]
         if self.var == '':
             self.var = self["textvariable"] = StringVar()
 
         self.var.trace('w', self.changed)
         self.bind("<Right>", self.selection)
-        self.bind("<Up>", self.up)
-        self.bind("<Down>", self.down)
+        self.bind("<Up>", self.moveUp)
+        self.bind("<Down>", self.moveDown)
 
-        self.lb_up = False
+        self.listboxUp = False
 
     def changed(self, name, index, mode):
-
         if self.var.get() == '':
-            self.lb.destroy()
-            self.lb_up = False
+            if self.listboxUp:
+                self.listbox.destroy()
+                self.listboxUp = False
         else:
             words = self.comparison()
             if words:
-                if not self.lb_up:
-                    self.lb = Listbox()
-                    self.lb.bind("<Double-Button-1>", self.selection)
-                    self.lb.bind("<Right>", self.selection)
-                    self.lb.place(x=self.winfo_x(), y=self.winfo_y() + self.winfo_height())
-                    self.lb_up = True
+                if not self.listboxUp:
+                    self.listbox = Listbox(width=self["width"], height=self.listboxLength)
+                    self.listbox.bind("<Button-1>", self.selection)
+                    self.listbox.bind("<Right>", self.selection)
+                    self.listbox.place(x=self.winfo_x(), y=self.winfo_y() + self.winfo_height())
+                    self.listboxUp = True
 
-                self.lb.delete(0, END)
+                self.listbox.delete(0, END)
                 for w in words:
-                    self.lb.insert(END, w)
+                    self.listbox.insert(END, w)
             else:
-                if self.lb_up:
-                    self.lb.destroy()
-                    self.lb_up = False
+                if self.listboxUp:
+                    self.listbox.destroy()
+                    self.listboxUp = False
 
     def selection(self, event):
-
-        if self.lb_up:
-            self.var.set(self.lb.get(ACTIVE))
-            self.lb.destroy()
-            self.lb_up = False
+        if self.listboxUp:
+            self.var.set(self.listbox.get(ACTIVE))
+            self.listbox.destroy()
+            self.listboxUp = False
             self.icursor(END)
 
-    def up(self, event):
-
-        if self.lb_up:
-            if self.lb.curselection() == ():
+    def moveUp(self, event):
+        if self.listboxUp:
+            if self.listbox.curselection() == ():
                 index = '0'
             else:
-                index = self.lb.curselection()[0]
+                index = self.listbox.curselection()[0]
+
             if index != '0':
-                self.lb.selection_clear(first=index)
+                self.listbox.selection_clear(first=index)
                 index = str(int(index) - 1)
-                self.lb.selection_set(first=index)
-                self.lb.activate(index)
 
-    def down(self, event):
+                self.listbox.see(index)  # Scroll!
+                self.listbox.selection_set(first=index)
+                self.listbox.activate(index)
 
-        if self.lb_up:
-            if self.lb.curselection() == ():
+    def moveDown(self, event):
+        if self.listboxUp:
+            if self.listbox.curselection() == ():
                 index = '0'
             else:
-                index = self.lb.curselection()[0]
+                index = self.listbox.curselection()[0]
+
             if index != END:
-                self.lb.selection_clear(first=index)
+                self.listbox.selection_clear(first=index)
                 index = str(int(index) + 1)
-                self.lb.selection_set(first=index)
-                self.lb.activate(index)
+
+                self.listbox.see(index)  # Scroll!
+                self.listbox.selection_set(first=index)
+                self.listbox.activate(index)
 
     def comparison(self):
-        pattern = re.compile('.*' + self.var.get() + '.*')
-        return [w for w in self.lista if re.match(pattern, w)]
+        return [w for w in self.autocompleteList if self.matchesFunction(self.var.get(), w)]
+
+
+class RouteAttemptsEntry(Frame):
+    def __init__(self, parent, num, *args, **kwargs):
+        Frame.__init__(self, parent, *args, **kwargs)
+        self.num = num
+        self.parent = parent
+
+        self.plusIcon = '+'
+        self.minusIcon = '-'  # im expecting these will be replaced with imgs in the future
+        self.attemptsAmt = IntVar()
+        self.attemptsAmt.set(0)
+
+        self.numLabel = Label(self, text='#{}'.format(num), width=3)
+        self.minusButton = Button(self, text=self.minusIcon, width=2, command=self.minus)
+        self.attemptsAmtLabel = Label(self, width=2, textvariable=self.attemptsAmt)
+        self.plusButton = Button(self, text=self.plusIcon, width=2, command=self.plus)
+
+        self.numLabel.pack(side='left')
+        self.minusButton.pack(side='left')
+        self.attemptsAmtLabel.pack(side='left')
+        self.plusButton.pack(side='left')
+
+    def plus(self):
+        if self.attemptsAmt.get() > 0:
+            self.attemptsAmt.set(self.attemptsAmt.get() + 1)
+        elif self.parent.notFiveRoutesSelected():
+            self.attemptsAmt.set(self.attemptsAmt.get() + 1)
+            self.numLabel.configure(bg='green', fg='white')
+        self.parent.parent.competitorInfoFrame.update_from_route_buttons()
+
+    def reset(self):
+        self.attemptsAmt.set(0)
+        self.numLabel.configure(bg='SystemButtonFace', fg='black')
+
+    def minus(self):
+        if self.attemptsAmt.get() != 0:
+            self.attemptsAmt.set(self.attemptsAmt.get() - 1)
+        if self.attemptsAmt.get() == 0:
+            self.numLabel.configure(bg='SystemButtonFace', fg='black')
+        self.parent.parent.competitorInfoFrame.update_from_route_buttons()

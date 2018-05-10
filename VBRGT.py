@@ -13,18 +13,19 @@ class Application(tk.Frame):
 
         self.menubar = MenuBar(self)
         self.notebook = Notebook(self)
-        self.entryTab = EntryTab(self)
+        self.entryTab = EntryTab(self, self.localDatabase)
         self.competitionTab = CompetitionTab(self, self.localDatabase)
-
         self.parent.configure(menu=self.menubar)
+
         self.entryTab.pack(fill='both', expand=1)
         self.competitionTab.pack(fill='both', expand=1)
+
         self.notebook.add(self.competitionTab, text='Competition')
         self.notebook.add(self.entryTab, text='Score Entry')
-        self.notebook.pack(fill="both")
+        self.notebook.pack(fill="both", expand=1)
 
 
 if __name__ == '__main__':
     root = tk.Tk()
-    Application(root).pack()
+    Application(root).pack(expand=1, fill='both')
     root.mainloop()
