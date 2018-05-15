@@ -139,6 +139,7 @@ class RouteAttemptsEntry(Frame):
         Frame.__init__(self, parent, *args, **kwargs)
         self.num = num
         self.parent = parent
+        self.isActive = False
 
         self.plusIcon = '+'
         self.minusIcon = '-'  # im expecting these will be replaced with imgs in the future
@@ -158,18 +159,22 @@ class RouteAttemptsEntry(Frame):
     def plus(self):
         if self.attemptsAmt.get() > 0:
             self.attemptsAmt.set(self.attemptsAmt.get() + 1)
-        elif self.parent.notFiveRoutesSelected():
+        elif self.parent.not_five_routes_selected():
             self.attemptsAmt.set(self.attemptsAmt.get() + 1)
-            self.numLabel.configure(bg='green', fg='white')
+            self.activate()
         self.parent.parent.competitorInfoFrame.update_from_route_buttons()
-
-    def reset(self):
-        self.attemptsAmt.set(0)
-        self.numLabel.configure(bg='SystemButtonFace', fg='black')
 
     def minus(self):
         if self.attemptsAmt.get() != 0:
             self.attemptsAmt.set(self.attemptsAmt.get() - 1)
         if self.attemptsAmt.get() == 0:
-            self.numLabel.configure(bg='SystemButtonFace', fg='black')
+            self.deactivate()
         self.parent.parent.competitorInfoFrame.update_from_route_buttons()
+
+    def activate(self):
+        self.isActive = True
+        self.numLabel.configure(bg='green', fg='white')
+
+    def deactivate(self):
+        self.isActive = False
+        self.numLabel.configure(bg='SystemButtonFace', fg='black')

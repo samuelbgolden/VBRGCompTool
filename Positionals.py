@@ -37,7 +37,30 @@ class EntryTab(Frame):
         self.routeAttemptsEntryFrame.pack(side=LEFT, fill='y', anchor=N+W, padx=20)
         self.competitorInfoFrame.pack(side=TOP, anchor=N+W)
 
+        self.bind('<FocusIn>', self.foc_in)
 
+    def foc_in(self, *args):
+        if self.competitorInfoFrame.idValue.get() == 0:
+            self.disable_frame(self.competitorInfoFrame)
+            self.disable_frame(self.routeAttemptsEntryFrame)
+
+    def disable_frame(self, frame):  # loops recursively through all frame children disabling their normal widgets
+        for widget in frame.winfo_children():
+            if widget.winfo_class() == 'Frame':
+                self.disable_frame(widget)
+            else:
+                widget.configure(state='disable')
+
+    def enable_frame(self, frame):  # loops recursively through all frame children enabling their normal widgets
+        for widget in frame.winfo_children():
+            if widget.winfo_class() == 'Frame':
+                self.enable_frame(widget)
+            else:
+                widget.configure(state='normal')
+
+
+# a frame that will display the buttons which can select attempts needed to finish up to 5 routes
+# child of EntryTab
 class RouteAttemptsEntryFrame(Frame):
     def __init__(self, parent, db, *args, **kwargs):
         Frame.__init__(self, parent, *args, **kwargs)
@@ -56,18 +79,25 @@ class RouteAttemptsEntryFrame(Frame):
     def get_selected_routes(self):
         selected = []
         for route in self.routes:
-            if route.numLabel.cget('bg') == 'green':
+            if route.isActive:
                 selected.append(route)
         return selected
 
+    def update_from_info_entries(self, values):  # should be 10 values
+        self.reset()
+        for i in range(0, 5):
+            self.routes[values[i] - 1].activate()
+            self.routes[values[i] - 1].attemptsAmt.set(values[i+5])
+
     def reset(self):
         for route in self.routes:
-            route.reset()
+            route.attemptsAmt.set(0)
+            route.deactivate()
 
-    def notFiveRoutesSelected(self):
+    def not_five_routes_selected(self):
         count = 0
         for route in self.routes:
-            if route.numLabel.cget('bg') == 'green':  # checks if route is selected
+            if route.isActive:  # checks if route is selected
                 count += 1
         if count < 5:
             return True
@@ -132,9 +162,11 @@ class CompetitorInfoFrame(Frame):
             Label(self.routeListingFrame, text=i+1, fg='white', bg='dark gray')\
                 .grid(column=2*i+1, row=0, rowspan=2, stick='ns')
             entry.grid(stick='nw', row=0, column=2*i+2)
+            entry.bind('<Key>', self.update_to_route_buttons)
         self.attemptsLabel.grid(stick='nse', row=1, column=0)
         for i, entry in enumerate(self.attemptEntries):
             entry.grid(stick='nw', row=1, column=2*i+2)
+            entry.bind('<Key>', self.update_to_route_buttons)
         self.updateButton.grid(row=8, column=0, columnspan=6)
 
         for i in range(0, Grid.grid_size(self)[0]):
@@ -155,12 +187,13 @@ class CompetitorInfoFrame(Frame):
         self.levelEntry.insert(0, row[3])
         self.sexValue.set(row[4])
         self.ageEntry.insert(0, row[5])
-        #need score thing here for row[6]
+        #need score thing here for row[6]?
         for i in range(0, 5):
-            self.routeEntries[i].insert(0, row[i+7])
-            self.attemptEntries[i].insert(0, row[i+12])
-            self.parent.routeAttemptsEntryFrame.routes[row[i+7]].attemptsAmt.set(row[i+12])
-            self.parent.routeAttemptsEntryFrame.routes[row[i+7]].numLabel.configure(bg='green', fg='white')
+            if row[i+7] != 0:  # checks if is there a route in the database row
+                self.routeEntries[i].insert(0, row[i+7])
+                self.attemptEntries[i].insert(0, row[i+12])
+                self.parent.routeAttemptsEntryFrame.routes[row[i+7] - 1].attemptsAmt.set(row[i+12])
+                self.parent.routeAttemptsEntryFrame.routes[row[i+7] - 1].activate()
 
     def clear_competitor(self):
         self.idValue.set(0)
@@ -173,43 +206,73 @@ class CompetitorInfoFrame(Frame):
         for entry in self.attemptEntries:
             entry.delete(0, 'end')
 
+    def get_entered_values(self):
+        entered = []  # Route id's take first five spots, attempts take next 5
+        for entry in self.routeEntries:
+            if entry.get() == '':
+                entered.append(0)
+            else:
+                entered.append(int(entry.get()))
+        for entry in self.attemptEntries:
+            if entry.get() == '':
+                entered.append(0)
+            else:
+                entered.append(int(entry.get()))
+        for i in range(0, 5):
+            if entered[i+5] == 0:
+                entered[i] = 0
+        return entered
+
+    def update_to_route_buttons(self, *args):
+        entered = self.get_entered_values()
+        self.parent.routeAttemptsEntryFrame.update_from_info_entries(entered)
+
     def update_from_route_buttons(self):
         selected = self.parent.routeAttemptsEntryFrame.get_selected_routes()
         for i in range(0, 5):
             self.routeEntries[i].delete(0, 'end')
             self.attemptEntries[i].delete(0, 'end')
-            try:
-                self.routeEntries[i].insert(0, selected[i].num)
-                self.attemptEntries[i].insert(0, selected[i].attemptsAmt.get())
-            except IndexError:
-                break
+        for i, route in enumerate(selected):
+            self.routeEntries[i].insert(0, route.num)
+            self.attemptEntries[i].insert(0, route.attemptsAmt.get())
 
     def update_competitor(self):
-        self.db.update_row(self.idValue.get(),
-                           (self.fnameEntry.get(),
-                            self.lnameEntry.get(),
-                            self.levelEntry.get(),
-                            self.sexValue.get(),
-                            self.ageEntry.get(),
-                            self.calc_score(),
-                            self.routeEntries[0].get(),
-                            self.routeEntries[1].get(),
-                            self.routeEntries[2].get(),
-                            self.routeEntries[3].get(),
-                            self.routeEntries[4].get(),
-                            self.attemptEntries[0].get(),
-                            self.attemptEntries[1].get(),
-                            self.attemptEntries[2].get(),
-                            self.attemptEntries[3].get(),
-                            self.attemptEntries[4].get()))
-        self.parent.parent.competitionTab.competitionFrame.competitorTable.update_table()
+        routevalues = []
+        attemptvalues = []
+        for entry in self.routeEntries:
+            if entry.get() == '':
+                routevalues.append(0)
+            else:
+                routevalues.append(entry.get())
+        for entry in self.attemptEntries:
+            if entry.get() == '':
+                attemptvalues.append(0)
+            else:
+                attemptvalues.append(entry.get())  # these two for loops prevent passing empty strings to the database
+        
+        row = (self.fnameEntry.get(), self.lnameEntry.get(), self.levelEntry.get(), self.sexValue.get(),
+               self.ageEntry.get(), self.calc_score(), routevalues[0], routevalues[1], routevalues[2],
+               routevalues[3], routevalues[4], attemptvalues[0], attemptvalues[1], attemptvalues[2],
+               attemptvalues[3], attemptvalues[4])
+        self.db.update_row(self.idValue.get(), row)  # loads info to database
+        self.parent.parent.competitionTab.competitionFrame.competitorTable.update_table()  # updates registration list
+        self.clear_competitor()  # clears competitor info in entries
+        self.parent.routeAttemptsEntryFrame.reset()  # resets route entries back to gray state with no values
+        self.parent.disable_frame(self)  # disables competitorInfoFrame
+        self.parent.disable_frame(self.parent.routeAttemptsEntryFrame)  # disables routeAttemptsEntryFrame
 
     def calc_score(self):
         score = 0
-        for entry in self.routeEntries:
-            score += int(entry.get()) * 100  # currently throws ValueError on an empty entry box
-        return score                         # a series of try statements would probably be best here
 
+        for entry in self.routeEntries:
+            if entry.get() != '':
+                score += int(entry.get()) * 100
+            else:
+                break
+        return score
+
+
+########################################################################################################################
 
 # a full tab of the notebook, containing standings and competitor list
 # child of application, 'added' to notebook
@@ -219,11 +282,20 @@ class CompetitionTab(Frame):
         self.parent = parent
         self.db = db
 
-        self.standingsFrame = LabelFrame(self, text='Standings', width=100)
+        self.standingsFrame = StandingsFrame(self, db)
         self.competitionFrame = CompetitionFrame(self, db)
 
         self.competitionFrame.pack(side='right', fill='y', expand=1, anchor=E)
         self.standingsFrame.pack(side='left', fill='both', expand=4)
+
+
+# frame containing the list of competitors by score in their categories
+# child of CompetitionTab
+class StandingsFrame(Frame):
+    def __init__(self, parent, db, *args, **kwargs):
+        Frame.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
+        self.db = db
 
 
 # frame containing the registration and table of competitors
@@ -370,9 +442,13 @@ class CompetitorTable(Frame):
 
     def edit_competitor(self, *args):
         id = self.get_selected_competitor()
+        entrytab = self.parent.parent.parent.entryTab
+
+        entrytab.routeAttemptsEntryFrame.reset()
+        entrytab.enable_frame(entrytab.competitorInfoFrame)
+        entrytab.enable_frame(entrytab.routeAttemptsEntryFrame)
+        entrytab.competitorInfoFrame.fill_competitor(self.idLB.get(id))  # fills info to entry
         self.parent.parent.parent.notebook.select(1)  # moves to entry tab in notebook
-        self.parent.parent.parent.entryTab.routeAttemptsEntryFrame.reset()
-        self.parent.parent.parent.entryTab.competitorInfoFrame.fill_competitor(self.idLB.get(id))  # fills info to entry
 
     def set_scrollables(self, *args):
         self.idLB.yview(*args)
