@@ -178,3 +178,12 @@ class RouteAttemptsEntry(Frame):
     def deactivate(self):
         self.isActive = False
         self.numLabel.configure(bg='SystemButtonFace', fg='black')
+
+
+def mk_int(s):
+    s = s.strip()
+    try:
+        return int(s)
+    except ValueError:
+        return 0
+

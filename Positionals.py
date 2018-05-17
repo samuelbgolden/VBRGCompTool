@@ -1,4 +1,4 @@
-from tkinter import Menu, Radiobutton, LabelFrame, Spinbox, W, E, S, N, Scrollbar, LEFT, Grid, TOP
+from tkinter import Menu, Radiobutton, Spinbox, W, E, S, N, Scrollbar, LEFT, Grid, TOP
 from Interactives import *
 
 
@@ -86,8 +86,9 @@ class RouteAttemptsEntryFrame(Frame):
     def update_from_info_entries(self, values):  # should be 10 values
         self.reset()
         for i in range(0, 5):
-            self.routes[values[i] - 1].activate()
-            self.routes[values[i] - 1].attemptsAmt.set(values[i+5])
+            if not(values[i] == 0):
+                self.routes[values[i] - 1].activate()
+                self.routes[values[i] - 1].attemptsAmt.set(values[i+5])
 
     def reset(self):
         for route in self.routes:
@@ -157,17 +158,25 @@ class CompetitorInfoFrame(Frame):
         self.ageLabel.grid(stick='nw', row=5, column=4)
         self.ageEntry.grid(stick='nw', row=5, column=5)
         self.routeListingFrame.grid(stick='nw', row=7, column=0, columnspan=6)
-        self.routesLabel.grid(stick='nse', row=0, column=0)
+        self.routesLabel.grid(stick='nsw', row=0, column=0)
         for i, entry in enumerate(self.routeEntries):
             Label(self.routeListingFrame, text=i+1, fg='white', bg='dark gray')\
                 .grid(column=2*i+1, row=0, rowspan=2, stick='ns')
             entry.grid(stick='nw', row=0, column=2*i+2)
-            entry.bind('<Key>', self.update_to_route_buttons)
-        self.attemptsLabel.grid(stick='nse', row=1, column=0)
+            entry.bind('<FocusOut>', self.update_to_route_buttons)
+        self.attemptsLabel.grid(stick='nsw', row=1, column=0)
         for i, entry in enumerate(self.attemptEntries):
             entry.grid(stick='nw', row=1, column=2*i+2)
-            entry.bind('<Key>', self.update_to_route_buttons)
+            entry.bind('<FocusOut>', self.update_to_route_buttons)
         self.updateButton.grid(row=8, column=0, columnspan=6)
+
+        taborder = []
+        for i in range(0, 5):
+            taborder.append(self.routeEntries[i])
+            taborder.append(self.attemptEntries[i])
+
+        for widget in taborder:
+            widget.lift()
 
         for i in range(0, Grid.grid_size(self)[0]):
             Grid.grid_rowconfigure(self, i, weight=1)
@@ -187,7 +196,7 @@ class CompetitorInfoFrame(Frame):
         self.levelEntry.insert(0, row[3])
         self.sexValue.set(row[4])
         self.ageEntry.insert(0, row[5])
-        #need score thing here for row[6]?
+        # need score thing here for row[6]?
         for i in range(0, 5):
             if row[i+7] != 0:  # checks if is there a route in the database row
                 self.routeEntries[i].insert(0, row[i+7])
@@ -206,21 +215,27 @@ class CompetitorInfoFrame(Frame):
         for entry in self.attemptEntries:
             entry.delete(0, 'end')
 
-    def get_entered_values(self):
-        entered = []  # Route id's take first five spots, attempts take next 5
-        for entry in self.routeEntries:
-            if entry.get() == '':
-                entered.append(0)
-            else:
-                entered.append(int(entry.get()))
-        for entry in self.attemptEntries:
-            if entry.get() == '':
-                entered.append(0)
-            else:
-                entered.append(int(entry.get()))
+    def validate_entries(self):
         for i in range(0, 5):
-            if entered[i+5] == 0:
-                entered[i] = 0
+            if not(range(1, 51).__contains__(mk_int(self.routeEntries[i].get()))):
+                self.routeEntries[i].delete(0, 'end')
+                self.attemptEntries[i].delete(0, 'end')
+            else:
+                for widget in self.routeEntries[0:i]:
+                    if widget.get() == self.routeEntries[i].get():
+                        self.routeEntries[i].delete(0, 'end')
+                        self.attemptEntries[i].delete(0, 'end')
+
+            if not(range(1, 101).__contains__(mk_int(self.attemptEntries[i].get()))):
+                # self.routeEntries[i].delete(0, 'end')
+                self.attemptEntries[i].delete(0, 'end')
+
+    def get_entered_values(self):
+        self.validate_entries()
+        entered = [0 for _ in range(0, 10)]  # Route id's take first five spots, attempts take next 5
+        for i in range(0, 5):
+            entered[i] = mk_int(self.routeEntries[i].get())
+            entered[i+5] = mk_int(self.attemptEntries[i].get())
         return entered
 
     def update_to_route_buttons(self, *args):
