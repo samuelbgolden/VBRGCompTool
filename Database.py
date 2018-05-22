@@ -17,11 +17,14 @@ class LocalDatabase:
                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', row)
 
     def insert_rows(self, rows):
-        self.c.executemany('''INSERT INTO competitors (fname, lname, level, sex, age, score, r1, r2, r3, r4, r5, a1, a2, a3, a4, a5)
-                            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', rows)
+        self.c.executemany('''INSERT INTO competitors (id, fname, lname, level, sex, age, score, r1, r2, r3, r4, r5, a1, a2, a3, a4, a5)
+                            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', rows)
 
     def delete_row(self, id):
         self.c.execute('''DELETE FROM competitors WHERE id = ?''', (id,))
+
+    def delete_all(self):
+        self.c.execute('DELETE FROM competitors')
 
     def get_all(self):
         self.c.execute('SELECT * FROM competitors ORDER BY lname COLLATE NOCASE')

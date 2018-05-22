@@ -1,26 +1,31 @@
-from tkinter import Menu, Radiobutton, Spinbox, W, E, S, N, Scrollbar, LEFT, Grid, TOP
+from tkinter import Menu, Radiobutton, Spinbox, W, E, S, N, Scrollbar, LEFT, Grid, TOP, StringVar, Listbox, FLAT
 from Interactives import *
 
 
 # the gray bar that contains 'File' and the associated commands
 # child of application
 class MenuBar(Menu):
-    def __init__(self, parent, *args, **kwargs):
+    def __init__(self, parent, db, io, *args, **kwargs):
         Menu.__init__(self, parent, *args, **kwargs)
         self.parent = parent
+        self.db = db
+        self.io = io
 
         self.filemenu = Menu(self, tearoff=0)
-        self.filemenu.add_command(label="New Competition")
-        self.filemenu.add_command(label="Save")
-        self.filemenu.add_command(label="Save as...")
+        self.filemenu.add_command(label="New Competition", command=self.io.new)
+        self.filemenu.add_command(label="Save", command=self.io.save)
+        self.filemenu.add_command(label="Save as...", command=self.io.save_as)
         self.filemenu.add_separator()
-        self.filemenu.add_command(label="Open")
+        self.filemenu.add_command(label="Open", command=self.io.open)
         self.filemenu.add_command(label="Export")
         self.filemenu.add_command(label="Print")
         self.filemenu.add_separator()
-        self.filemenu.add_command(label="Close")
+        self.filemenu.add_command(label="Close", command=self.io.close)
 
         self.add_cascade(label="File", menu=self.filemenu)
+
+
+########################################################################################################################
 
 
 # a full tab frame in the notebook, containing name buttons and routes
@@ -33,7 +38,9 @@ class EntryTab(Frame):
 
         self.competitorInfoFrame = CompetitorInfoFrame(self, self.db)
         self.routeAttemptsEntryFrame = RouteAttemptsEntryFrame(self, self.db)
+        self.competitorSelectionFrame = CompetitorSelectionFrame(self, self.db)
 
+        self.competitorSelectionFrame.pack(side=LEFT, fill='y', anchor=N+W)
         self.routeAttemptsEntryFrame.pack(side=LEFT, fill='y', anchor=N+W, padx=20)
         self.competitorInfoFrame.pack(side=TOP, anchor=N+W)
 
@@ -57,6 +64,29 @@ class EntryTab(Frame):
                 self.enable_frame(widget)
             else:
                 widget.configure(state='normal')
+
+
+# a frame that contains tool(s) for selecting the competitor to edit
+# child of entryTab
+class CompetitorSelectionFrame(Frame):
+    def __init__(self, parent, db, *args, **kwargs):
+        Frame.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
+        self.db = db
+
+        self.buttonTexts = ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
+                            'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
+                            'W', 'X', 'Y', 'Z')
+
+        self.alphabetButtons = []
+        for i in range(0, 26):
+            self.alphabetButtons.append(Button(self, text=self.buttonTexts[i], relief=FLAT, activebackground='white',
+                                               bg='black', fg='white', height=2, width=3,
+                                               command=lambda i=i: self.show_filtered_competitors(self.buttonTexts[i])))
+            self.alphabetButtons[i].grid(column=i//13, row=i % 13)
+
+    def show_filtered_competitors(self, letter):
+        print(letter)
 
 
 # a frame that will display the buttons which can select attempts needed to finish up to 5 routes
@@ -288,6 +318,7 @@ class CompetitorInfoFrame(Frame):
 
 
 ########################################################################################################################
+
 
 # a full tab of the notebook, containing standings and competitor list
 # child of application, 'added' to notebook

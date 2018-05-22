@@ -2,16 +2,19 @@ import tkinter as tk
 from tkinter.ttk import Notebook
 from Positionals import *
 from Database import LocalDatabase
+from IOHandler import IOHandler
 
 
 class Application(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
+        self.parent.title('New Competition')
 
         self.localDatabase = LocalDatabase()
+        self.ioHandler = IOHandler(self, self.localDatabase)
 
-        self.menubar = MenuBar(self)
+        self.menubar = MenuBar(self, self.localDatabase, self.ioHandler)
         self.notebook = Notebook(self)
         self.entryTab = EntryTab(self, self.localDatabase)
         self.competitionTab = CompetitionTab(self, self.localDatabase)
