@@ -332,7 +332,7 @@ class CompetitionTab(Frame):
         self.competitionFrame = CompetitionFrame(self, db)
 
         self.competitionFrame.pack(side='right', fill='y', expand=1, anchor=E)
-        self.standingsFrame.pack(side='left', fill='both', expand=4)
+        self.standingsFrame.pack(side='left', fill='y', expand=3)
 
 
 # frame containing the list of competitors by score in their categories
@@ -342,6 +342,39 @@ class StandingsFrame(Frame):
         Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
         self.db = db
+
+
+class CategoricalStandings(Frame):
+    def __init__(self, parent, db, *args, **kwargs):
+        Frame.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
+        self.db = db
+
+        self.idLB = Listbox(self, borderwidth=0, width=3)
+        self.fnameLB = Listbox(self, borderwidth=0, width=25)
+        self.lnameLB = Listbox(self, borderwidth=0, width=25)
+        self.scoreLB = Listbox(self, borderwidth=0, width=10)
+
+        self.idLB.pack(side='left', fill='y', expand=True)
+        self.fnameLB.pack(side='left', fill='y', expand=True)
+        self.lnameLB.pack(side='left', fill='y', expand=True)
+        self.scoreLB = Listbox(side='left', fill='y', expand=True)
+
+    def update_table(self):
+        self.clear_table()
+        rows = self.db.get_all()
+        for i, row in enumerate(rows):
+            self.idLB.insert(i, row[0])
+            self.fnameLB.insert(i, row[1])
+            self.lnameLB.insert(i, row[2])
+            self.scoreLB.insert(i, row[3])
+
+    def clear_table(self):
+        self.idLB.delete(0, 'end')
+        self.fnameLB.delete(0, 'end')
+        self.lnameLB.delete(0, 'end')
+        self.scoreLB.delete(0, 'end')
+
 
 
 # frame containing the registration and table of competitors

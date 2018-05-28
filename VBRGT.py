@@ -27,6 +27,8 @@ class Application(tk.Frame):
         self.notebook.add(self.entryTab, text='Score Entry')
         self.notebook.pack(fill="both", expand=1)
 
+        self.parent.protocol('WM_DELETE_WINDOW', self.ioHandler.close)
+
 
 if __name__ == '__main__':
     root = tk.Tk()

@@ -34,6 +34,20 @@ class LocalDatabase:
         self.c.execute('''SELECT * FROM competitors WHERE id = ?''', (id,))
         return self.c.fetchone()
 
+    def get_specific_rows_by_score(self, **kwargs):  # orders by score by default
+        attributes = ('id', 'fname', 'lname', 'level', 'sex', 'age', 'score',
+                      'r1', 'r2', 'r3', 'r4', 'r5', 'a1', 'a2', 'a3', 'a4', 'a5')
+
+        execstring = 'SELECT id, fname, lname, score FROM competitors'
+
+        for i, k in enumerate(kwargs.keys()):
+            if i == 0:
+                execstring += ' WHERE '
+            if k in attributes:
+                execstring += '{} = {}'.format(k, kwargs[k])
+
+
+
     def update_row(self, id, info):
         ordered = info + (id,)
         self.c.execute('''UPDATE competitors 
