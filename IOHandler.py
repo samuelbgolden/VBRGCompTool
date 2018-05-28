@@ -39,7 +39,7 @@ class IOHandler:
 
     def open(self):
         if not self.is_saved():
-            a = self.prompt_save() 
+            a = self.prompt_save()
             if a:
                 self.save()
             elif a is None:
