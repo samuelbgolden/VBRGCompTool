@@ -361,7 +361,7 @@ class CategoricalStandings(Frame):
         self.scoreLB = Listbox(side='left', fill='y', expand=True)
 
     def update_table(self):
-        self.clear_table()
+        self.clear_table() 
         rows = self.db.get_all()
         for i, row in enumerate(rows):
             self.idLB.insert(i, row[0])
