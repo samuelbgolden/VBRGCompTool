@@ -1,6 +1,8 @@
 from tkinter import Entry, Frame, Button, IntVar, Label
 
 
+# entry box that has light gray text in it before entry
+# only used in the registration
 class EntryWithPlaceholder(Entry):
     def __init__(self, master=None, placeholder='placeholder', color='grey', width=15):
         super().__init__(master, width=width)
@@ -32,6 +34,8 @@ class EntryWithPlaceholder(Entry):
         self.put_placeholder()
 
 
+# frame containing plus and minus buttons, a number, and an amount of attempts
+# used by the RouteAttemptsEntryFrame class
 class RouteAttemptsEntry(Frame):
     def __init__(self, parent, num, *args, **kwargs):
         Frame.__init__(self, parent, *args, **kwargs)
@@ -78,10 +82,11 @@ class RouteAttemptsEntry(Frame):
         self.numLabel.configure(bg='SystemButtonFace', fg='black')
 
 
+# static method for converting a value to an int (if it can't it becomes 0)
+# used in the validation of route numbers and attempt amounts
 def mk_int(s):
     s = s.strip()
     try:
         return int(s)
     except ValueError:
         return 0
-

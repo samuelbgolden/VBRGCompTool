@@ -5,6 +5,7 @@ from Database import LocalDatabase
 from IOHandler import IOHandler
 
 
+# its everything
 class Application(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
@@ -25,11 +26,12 @@ class Application(tk.Frame):
 
         self.notebook.add(self.competitionTab, text='Competition')
         self.notebook.add(self.entryTab, text='Score Entry')
-        self.notebook.pack(fill="both", expand=1)
+        self.notebook.pack(fill='both', expand=1)
 
         self.parent.protocol('WM_DELETE_WINDOW', self.ioHandler.close)
 
 
+# even more everything
 if __name__ == '__main__':
     root = tk.Tk()
     Application(root).pack(expand=1, fill='both')

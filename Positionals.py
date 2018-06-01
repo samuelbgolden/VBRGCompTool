@@ -79,14 +79,26 @@ class CompetitorSelectionFrame(Frame):
                             'W', 'X', 'Y', 'Z')
 
         self.alphabetButtons = []
+
+        self.filteredFrame = Frame(self)
+        self.filteredFrame.grid(row=0, column=0, rowspan=12, columnspan=2)
+        self.filteredFrame.grid_remove()
+
         for i in range(0, 26):
             self.alphabetButtons.append(Button(self, text=self.buttonTexts[i], relief=FLAT, activebackground='white',
-                                               bg='black', fg='white', height=2, width=3,
+                                               bg='black', fg='white',
                                                command=lambda i=i: self.show_filtered_competitors(self.buttonTexts[i])))
-            self.alphabetButtons[i].grid(column=i//13, row=i % 13)
+            self.alphabetButtons[i].grid(column=i % 2, row=i // 2, stick='nsew')
+
+        for row in range(0, self.grid_size()[1]):
+            self.rowconfigure(row, weight=1)
+        for col in range(0, self.grid_size()[0]):
+            self.columnconfigure(col, weight=1, minsize=100)
 
     def show_filtered_competitors(self, letter):
-        print(letter)
+        for button in self.alphabetButtons:
+            button.grid_remove()
+
 
 
 # a frame that will display the buttons which can select attempts needed to finish up to 5 routes
@@ -331,11 +343,11 @@ class CompetitionTab(Frame):
         self.standingsFrame = StandingsFrame(self, db)
         self.competitionFrame = CompetitionFrame(self, db)
 
-        self.competitionFrame.pack(side='right', fill='y', expand=1, anchor=E)
-        self.standingsFrame.pack(side='left', fill='y', expand=3)
+        self.competitionFrame.pack(side='right', fill='y')
+        self.standingsFrame.pack(side='right', fill='y')
 
 
-# frame containing the list of competitors by score in their categories
+# frame containing the CategoricalStandings objects
 # child of CompetitionTab
 class StandingsFrame(Frame):
     def __init__(self, parent, db, *args, **kwargs):
@@ -343,38 +355,68 @@ class StandingsFrame(Frame):
         self.parent = parent
         self.db = db
 
+        self.title = Label(self, text='Standings')
+        self.title.grid(row=0, column=0, columnspan=2)
 
+        self.standings = self.create_standard_standings()
+        for i, standing in enumerate(self.standings):
+            standing.grid(row=(i % 4)+1, column=i//4)
+            self.rowconfigure((i % 4)+1, weight=1)
+
+    def create_standard_standings(self):
+        levels = ('Beginner', 'Intermediate', 'Advanced', 'Open')
+        genders = ('M', 'F')
+
+        standings = []
+        for l in levels:
+            for g in genders:
+                standings.append(CategoricalStandings(self, self.db, borderwidth=3, background='gray', level=l, sex=g))
+        return standings
+
+    def update_all(self):
+        for standing in self.standings:
+            standing.update_table()
+
+
+# frame containing a single list of competitors by score for a specified set of attributes
+# children of StandingsFrame
 class CategoricalStandings(Frame):
-    def __init__(self, parent, db, *args, **kwargs):
+    def __init__(self, parent, db, level=None, sex=None, *args, **kwargs):
         Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
         self.db = db
 
-        self.idLB = Listbox(self, borderwidth=0, width=3)
-        self.fnameLB = Listbox(self, borderwidth=0, width=25)
-        self.lnameLB = Listbox(self, borderwidth=0, width=25)
-        self.scoreLB = Listbox(self, borderwidth=0, width=10)
+        self.selectedAttributes = {'level': level, 'sex': sex}
 
+        self.title = Label(self, text='{} | {}'.format(sex, level))
+        self.idLB = Listbox(self, borderwidth=0, width=3, activestyle='none')
+        self.fnameLB = Listbox(self, borderwidth=0, width=10, activestyle='none')
+        self.lnameLB = Listbox(self, borderwidth=0, width=18, activestyle='none')
+        self.scoreLB = Listbox(self, borderwidth=0, width=10, activestyle='none')
+
+        self.title.pack(side='top', fill='x', expand=True)
         self.idLB.pack(side='left', fill='y', expand=True)
         self.fnameLB.pack(side='left', fill='y', expand=True)
         self.lnameLB.pack(side='left', fill='y', expand=True)
-        self.scoreLB = Listbox(side='left', fill='y', expand=True)
+        self.scoreLB.pack(side='left', fill='y', expand=True)
+
+        self.update_table()
 
     def update_table(self):
         self.clear_table()
-        rows = self.db.get_all()
-        for i, row in enumerate(rows):
-            self.idLB.insert(i, row[0])
-            self.fnameLB.insert(i, row[1])
-            self.lnameLB.insert(i, row[2])
-            self.scoreLB.insert(i, row[3])
+        rows = self.db.get_specific_rows_by_score(**self.selectedAttributes)
+        if rows:
+            for i, row in enumerate(rows):
+                self.idLB.insert(i, row[0])
+                self.fnameLB.insert(i, row[1])
+                self.lnameLB.insert(i, row[2])
+                self.scoreLB.insert(i, row[3])
 
     def clear_table(self):
         self.idLB.delete(0, 'end')
         self.fnameLB.delete(0, 'end')
         self.lnameLB.delete(0, 'end')
         self.scoreLB.delete(0, 'end')
-
 
 
 # frame containing the registration and table of competitors
@@ -521,13 +563,15 @@ class CompetitorTable(Frame):
 
     def edit_competitor(self, *args):
         id = self.get_selected_competitor()
-        entrytab = self.parent.parent.parent.entryTab
 
-        entrytab.routeAttemptsEntryFrame.reset()
-        entrytab.enable_frame(entrytab.competitorInfoFrame)
-        entrytab.enable_frame(entrytab.routeAttemptsEntryFrame)
-        entrytab.competitorInfoFrame.fill_competitor(self.idLB.get(id))  # fills info to entry
-        self.parent.parent.parent.notebook.select(1)  # moves to entry tab in notebook
+        if id:
+            entrytab = self.parent.parent.parent.entryTab
+
+            entrytab.routeAttemptsEntryFrame.reset()
+            entrytab.enable_frame(entrytab.competitorInfoFrame)
+            entrytab.enable_frame(entrytab.routeAttemptsEntryFrame)
+            entrytab.competitorInfoFrame.fill_competitor(self.idLB.get(id))  # fills info to entry
+            self.parent.parent.parent.notebook.select(1)  # moves to entry tab in notebook
 
     def set_scrollables(self, *args):
         self.idLB.yview(*args)
@@ -547,6 +591,7 @@ class CompetitorTable(Frame):
             self.levelLB.insert(i, row[3])
             self.sexLB.insert(i, row[4])
             self.ageLB.insert(i, row[5])
+        self.parent.parent.standingsFrame.update_all()
 
     def clear_table(self):
         self.idLB.delete(0, 'end')

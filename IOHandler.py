@@ -4,6 +4,8 @@ import csv
 import os
 
 
+# handles all the stuff in the 'File' menu at the top left; i.e. saving, closing, opening, exporting files
+# most frequently accessed by the MenuBar class
 class IOHandler:
     def __init__(self, parent, db):
         self.filename = ''
@@ -23,6 +25,7 @@ class IOHandler:
         self.filename = ''
         self.parent.parent.title('New Competition')
         self.parent.competitionTab.competitionFrame.competitorTable.update_table()
+        self.parent.competitionTab.standingsFrame.update_all()
 
     def save(self):
         if self.filename == '':

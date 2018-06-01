@@ -1,7 +1,8 @@
 import sqlite3
 
 
-# contains all the competitors and their information
+# database containing all the competitors and their information
+# accessed by nearly every class
 class LocalDatabase:
     def __init__(self):  # where columns is a dictionary; keys=col names, values=data type
 
@@ -39,14 +40,21 @@ class LocalDatabase:
                       'r1', 'r2', 'r3', 'r4', 'r5', 'a1', 'a2', 'a3', 'a4', 'a5')
 
         execstring = 'SELECT id, fname, lname, score FROM competitors'
+        areAttributes=False
 
         for i, k in enumerate(kwargs.keys()):
             if i == 0:
-                execstring += ' WHERE '
-            if k in attributes:
-                execstring += '{} = {}'.format(k, kwargs[k])
+                execstring += ' WHERE'
+                areAttributes = True
+            if k in ('id', 'age', 'score', 'r1', 'r2', 'r3', 'r4', 'r5', 'a1', 'a2', 'a3', 'a4', 'a5'):
+                execstring += ' {} = {} AND'.format(k, kwargs[k])
+            elif k in ('fname', 'lname', 'level', 'sex'):
+                execstring += ' {} = \'{}\' AND'.format(k, kwargs[k])
+        if areAttributes:
+            execstring = execstring[:-4] + ' ORDER BY score DESC'
 
-
+        self.c.execute(execstring)
+        return self.c.fetchall()
 
     def update_row(self, id, info):
         ordered = info + (id,)
