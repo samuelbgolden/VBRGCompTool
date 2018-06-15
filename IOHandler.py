@@ -53,9 +53,9 @@ class IOHandler:
         with open(self.filename, 'r', newline='') as file:
             reader = csv.reader(file)
             self.db.delete_all()
-            self.parent.competitionTab.competitionFrame.competitorTable.update_table()
+            self.parent.competitorTab.competitorFrame.competitorTable.update_table()
             self.db.insert_rows(reader)
-        self.parent.competitionTab.competitionFrame.competitorTable.update_table()
+        self.parent.competitorTab.competitorFrame.competitorTable.update_table()
         self.parent.parent.title('Working in competition at ' + os.path.splitext(self.filename)[0])
 
     def write_all(self):

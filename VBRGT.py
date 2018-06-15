@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter.ttk import Notebook
+from tkinter.ttk import PanedWindow
 from Positionals import *
 from Database import LocalDatabase
 from IOHandler import IOHandler
@@ -12,21 +12,20 @@ class Application(tk.Frame):
         self.parent = parent
         self.parent.title('New Competition')
 
+        self.config(bg=LBLUE)
+
         self.localDatabase = LocalDatabase()
         self.ioHandler = IOHandler(self, self.localDatabase)
 
         self.menubar = MenuBar(self, self.localDatabase, self.ioHandler)
-        self.notebook = Notebook(self)
+        self.standingsTab = StandingsTab(self, self.localDatabase)
         self.entryTab = EntryTab(self, self.localDatabase)
-        self.competitionTab = CompetitionTab(self, self.localDatabase)
+        self.competitorTab = CompetitorTab(self, self.localDatabase)
         self.parent.configure(menu=self.menubar)
 
-        self.entryTab.pack(fill='both', expand=1)
-        self.competitionTab.pack(fill='both', expand=1)
-
-        self.notebook.add(self.competitionTab, text='Competition')
-        self.notebook.add(self.entryTab, text='Score Entry')
-        self.notebook.pack(fill='both', expand=1)
+        self.competitorTab.pack(side='left', anchor='nw', fill='y', expand=1)
+        self.entryTab.pack(side='left', anchor='nw', fill='y', expand=1)
+        self.standingsTab.pack(side='left', anchor='nw', fill='y', expand=1)
 
         self.parent.protocol('WM_DELETE_WINDOW', self.ioHandler.close)
 

@@ -1,0 +1,11 @@
+global LLBLUE
+global LBLUE
+global BLUE
+global DBLUE
+global DDBLUE
+
+LLBLUE = '#E3EDFD'
+LBLUE = '#9EC1FD'
+BLUE = '#71A6FF'
+DBLUE = '#498CFF'
+DDBLUE = '#196EFF'

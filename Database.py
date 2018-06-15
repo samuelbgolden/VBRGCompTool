@@ -56,6 +56,15 @@ class LocalDatabase:
         self.c.execute(execstring)
         return self.c.fetchall()
 
+    def get_specific(self, pattern):
+        self.c.execute('''SELECT * from competitors WHERE fname LIKE ? OR 
+                                                          lname LIKE ? OR
+                                                          id LIKE ? OR 
+                                                          sex LIKE ? OR 
+                                                          level LIKE ?''',
+                       (pattern+'%', pattern+'%', pattern+'%', pattern+'%', pattern+'%'))
+        return self.c.fetchall()
+
     def update_row(self, id, info):
         ordered = info + (id,)
         self.c.execute('''UPDATE competitors 
