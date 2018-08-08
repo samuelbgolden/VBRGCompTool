@@ -1,11 +1,11 @@
-from tkinter import Entry, Frame, Button, IntVar, Label, FLAT, StringVar
+from tkinter import Entry, Frame, Button, IntVar, Label, FLAT, StringVar, Toplevel
 from Colors import *
 
 
 # entry box that has light gray text in it before entry
 # only used in the registration
 class EntryWithPlaceholder(Entry):
-    def __init__(self, master=None, placeholder='placeholder', color=DDBLUE, width=15, *args, **kwargs):
+    def __init__(self, master=None, placeholder='placeholder', color='gray', width=15, *args, **kwargs):
         super().__init__(master, width=width, *args, **kwargs)
 
         self.placeholder = placeholder
@@ -78,9 +78,8 @@ class RouteAttemptsEntry(Frame):
         self.buttonbg = BLUE
         self.buttonfg = 'white'
 
-
         self.plusIcon = '+'
-        self.minusIcon = '-'  # im expecting these will be replaced with imgs in the future
+        self.minusIcon = '-'  # im expecting these will be replaced with images in the future
         self.attemptsAmt = IntVar()
         self.attemptsAmt.set(0)
 
@@ -122,7 +121,7 @@ class RouteAttemptsEntry(Frame):
 class CompetitorSearchBox(EntryWithPlaceholder):
     def __init__(self, parent, *args, **kwargs):
         self.content = StringVar()
-        super().__init__(parent, placeholder='Search competitors...', background=LLBLUE, textvariable=self.content)
+        super().__init__(parent, placeholder='Search competitors...', background=LLBLUE, color=DDBLUE, textvariable=self.content)
         self.parent = parent
 
         self.content.trace('w', self.update_results)
@@ -142,3 +141,8 @@ def mk_int(s):
         return int(s)
     except ValueError:
         return 0
+
+
+# will display a toplevel window with info on how to use the QuickCommand line
+def show_usage_help():
+    window = Toplevel()

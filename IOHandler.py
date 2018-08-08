@@ -24,8 +24,6 @@ class IOHandler:
         self.db.delete_all()
         self.filename = ''
         self.parent.parent.title('New Competition')
-        self.parent.competitionTab.competitionFrame.competitorTable.update_table()
-        self.parent.competitionTab.standingsFrame.update_all()
 
     def save(self):
         if self.filename == '':
@@ -53,9 +51,7 @@ class IOHandler:
         with open(self.filename, 'r', newline='') as file:
             reader = csv.reader(file)
             self.db.delete_all()
-            self.parent.competitorTab.competitorFrame.competitorTable.update_table()
             self.db.insert_rows(reader)
-        self.parent.competitorTab.competitorFrame.competitorTable.update_table()
         self.parent.parent.title('Working in competition at ' + os.path.splitext(self.filename)[0])
 
     def write_all(self):
@@ -92,4 +88,5 @@ class IOHandler:
                 self.save()
             elif a is None:
                 return
+        self.parent.databaseHandler.cont = False
         self.parent.parent.destroy()
