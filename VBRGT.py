@@ -1,4 +1,4 @@
-from tkinter import Tk
+from tkinter import Tk, TclError
 from Positionals import *
 from Database import *
 from IOHandler import IOHandler
@@ -23,12 +23,23 @@ class Application(Frame):
         self.quickCommand = QuickCommand(self, self.databaseHandler)  # bottom bar that allows text based usage
         self.parent.configure(menu=self.menubar)  # declares menu to be the declared menubar object
 
+        self.handle_fonts(self)
+
         self.quickCommand.pack(side='bottom', anchor=S, fill='x')
         self.competitorTab.pack(side='left', anchor=W, fill='y')  # packs as left-most
         self.entryTab.pack(side='left', anchor=W, fill='y')  # packs as second from left
         self.standingsTab.pack(side='left', anchor=W, fill='y')  # packs as third from left
 
         self.parent.protocol('WM_DELETE_WINDOW', self.ioHandler.close)  # handles clicking 'X' button with .close func
+
+    def handle_fonts(self, obj):
+        for widget in obj.winfo_children():
+            self.handle_fonts(widget)
+            try:
+                widget.configure(font=general)
+            except TclError:
+                print('tclError')
+
 
     def update_all(self):  # app method where things that need to be updated whenever some data manip occurs
         self.standingsTab.update_all()  # updates every standings table

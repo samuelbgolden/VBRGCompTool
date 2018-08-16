@@ -1,5 +1,5 @@
 from tkinter import Entry, Frame, Button, IntVar, Label, FLAT, StringVar, Toplevel
-from Colors import *
+from Styling import *
 
 
 # entry box that has light gray text in it before entry

@@ -24,7 +24,7 @@ class DatabaseHandler:
         self.unsyncedRows = []
 
     def update(self):
-        print("update func call at:", time.time())
+        print("~~~~~~~~~~ update func call at:", time.time(), "~~~~~~~~~~")
 
         if self.cont:
             self.timer = threading.Timer(self.delay, self.update)  # creates a thread for the timer
@@ -35,29 +35,34 @@ class DatabaseHandler:
         if self.updateFlag:
             try:
                 while self.unsyncedRows:
-                    print('unsyncedRows:', self.unsyncedRows)
-                    if self.unsyncedRows[0][0] == 'INSERT':
-                        item = self.unsyncedRows.pop(0)
-                        self.globaldb.insert_row(item[1])
+                    print('tending to unsynced rows:', self.unsyncedRows)
+                    if self.unsyncedRows[0][0] == 'INSERT':     # the redundancy in these if blocks
+                        item = self.unsyncedRows[0]             # is necessary, because we want to keep
+                        self.globaldb.insert_row(item[1])       # the unsynced row in the list if the action
+                        self.unsyncedRows.pop(0)                # returns an error
+                        print('insert performed')
                     elif self.unsyncedRows[0][0] == 'DELETE':
-                        item = self.unsyncedRows.pop(0)
+                        item = self.unsyncedRows[0]
                         self.globaldb.delete_row(item[1])
-                    elif self.unsyncedRows[0][0] == 'DELETE ALL':
                         self.unsyncedRows.pop(0)
+                        print('delete performed')
+                    elif self.unsyncedRows[0][0] == 'DELETE ALL':
                         self.globaldb.delete_all()
+                        self.unsyncedRows.pop(0)
+                        print('delete all performed')
                     elif self.unsyncedRows[0][0] == 'UPDATE':
-                        item = self.unsyncedRows.pop(0)
+                        item = self.unsyncedRows[0]
                         self.globaldb.update_row(item[1], item[2])
-                print('out of while loop')
-                globalrows = self.globaldb.get_all()
-                print('global rows gotten')
-                self.localdb.delete_all()
-                print('local rows deleted')
-                self.localdb.insert_rows(globalrows)
-                print('new local rows inserted')
+                        self.unsyncedRows.pop(0)
+                        print('update performed')
+                print('unsynced dealt with')
+                globalrows = list(self.globaldb.get_all())
+                localrows = self.localdb.get_all()
+                if not localrows == globalrows:
+                    self.localdb.delete_all()
+                    self.localdb.insert_rows(globalrows)
             except pymysql.Error:
-                print('connection error')
-            print('-----------------------------------------------')
+                print('pymysql error in: update_main')
             self.updateFlag = False
         self.parent.parent.after(1000, self.update_main)
 
@@ -66,6 +71,7 @@ class DatabaseHandler:
         try:
             self.globaldb.insert_row(row)
         except pymysql.Error:
+            print('pymysql error in: insert_row')
             self.unsyncedRows.append(('INSERT', row))
 
     def insert_rows(self, rows):
@@ -73,6 +79,7 @@ class DatabaseHandler:
         try:
             self.globaldb.insert_rows(rows)
         except pymysql.Error:
+            print('pymysql error in: insert_rows')
             for row in rows:
                 self.unsyncedRows.append(('INSERT', row))
 
@@ -81,6 +88,7 @@ class DatabaseHandler:
         try:
             self.globaldb.delete_row(id)
         except pymysql.Error:
+            print('pymysql error in: delete_row')
             self.unsyncedRows.append(('DELETE', id))
 
     def delete_all(self):
@@ -88,12 +96,14 @@ class DatabaseHandler:
         try:
             self.globaldb.delete_all()
         except pymysql.Error:
+            print('pymysql error in: delete_all')
             self.unsyncedRows.append(('DELETE ALL',))
 
     def get_all(self):
         try:
             rows = self.globaldb.get_all()
         except pymysql.Error:
+            print('pymysql error in: get_all')
             rows = self.localdb.get_all()
         return rows
 
@@ -101,6 +111,7 @@ class DatabaseHandler:
         try:
             row = self.globaldb.get_row(id)
         except pymysql.Error:
+            print('pymysql error in: get_row')
             row = self.localdb.get_row(id)
         return row
 
@@ -108,6 +119,7 @@ class DatabaseHandler:
         try:
             rows = self.globaldb.get_specific_rows_by_score(**kwargs)
         except pymysql.Error:
+            print('pymysql error in: get_specific_rows_by_score')
             rows = self.localdb.get_specific_rows_by_score(**kwargs)
         return rows
 
@@ -115,6 +127,7 @@ class DatabaseHandler:
         try:
             rows = self.globaldb.get_specific(pattern)
         except pymysql.Error:
+            print('pymysql error in: get_specific')
             rows = self.localdb.get_specific(pattern)
         return rows
 
@@ -123,6 +136,7 @@ class DatabaseHandler:
         try:
             self.globaldb.update_row(id, info)
         except pymysql.Error:
+            print('pymysql error in: update_row')
             self.unsyncedRows.append(('UPDATE', id, info))
 
 
@@ -154,6 +168,7 @@ class LocalDatabase:
         self.parent.parent.update_all()
 
     def delete_all(self):
+        print('delete all LOCAL')
         self.c.execute('DELETE FROM competitors')
         self.parent.parent.update_all()
 
@@ -228,7 +243,7 @@ class GlobalDatabase:
             else:
                 return False
         except pymysql.Error:
-            print('ERROR IN CONNECTION')
+            print('pymysql error in: is_connected')
         return False
 
     def is_configured(self):
@@ -236,8 +251,9 @@ class GlobalDatabase:
 
     def end(self):
         self.conn.commit()
+        print('any sql changes committed')
         self.parent.parent.update_all()
-        self.conn.close()
+        print('update_all called')
 
     def insert_row(self, row):
         self.connect()
@@ -256,28 +272,24 @@ class GlobalDatabase:
 
     def delete_row(self, id):
         self.connect()
+        print('connect called in global.delete_row')
         with self.conn.cursor() as c:
             c.execute('''DELETE FROM `competitors` WHERE `id` = %s''', (id,))
+            print('sql executed in global.delete_row')
         self.end()
+        print('end called in global.delete_row')
 
     def delete_all(self):
         self.connect()
         with self.conn.cursor() as c:
             c.execute('''DELETE FROM `competitors` WHERE `id` > 0''')
-        self.delete_all()
+        self.end()
 
     def get_all(self):
         self.connect()
-        print('connected')
         with self.conn.cursor() as c:
-            print('in with loop')
             c.execute('SELECT * FROM `competitors` ORDER BY `lname`')
-            print('executed')
             records = c.fetchall()
-            print('records gotten')
-        print('out of with')
-        self.conn.close()
-        print('conn closed')
         return records
 
     def get_row(self, id):
@@ -285,7 +297,6 @@ class GlobalDatabase:
         with self.conn.cursor() as c:
             c.execute('''SELECT * FROM `competitors` WHERE `id` = %s''', (id,))
             record = c.fetchone()
-        self.end()
         return record
 
     def get_specific_rows_by_score(self, **kwargs):  # orders by score by default
@@ -308,7 +319,6 @@ class GlobalDatabase:
         with self.conn.cursor() as c:
             c.execute(execstring)
             records = c.fetchall()
-        self.end()
         return records
 
     def get_specific(self, pattern):
@@ -320,7 +330,6 @@ class GlobalDatabase:
                                                           `id` LIKE %s''',
                        (pattern+'%', pattern+'%', pattern+'%', pattern+'%'))
             records = c.fetchall()
-        self.end()
         return records
 
     def update_row(self, id, info):
