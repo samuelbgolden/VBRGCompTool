@@ -27,6 +27,7 @@ class MenuBar(Menu):
         self.networkmenu = Menu(self, tearoff=0)  # creates 'Network' cascade
         self.networkmenu.add_command(label="Connect to database", command=self.db.globaldb.connect)
         self.networkmenu.add_command(label="Configure database connection", command=self.db.globaldb.prompt)
+       # self.networkmenu.add_command(label="Insert competition in global database", command=self.db.open_to_global)
        # self.networkmenu.add_command(label="Refresh from database", command=self.gdb.pull)
 
         self.add_cascade(label="File", menu=self.filemenu, background=LBLUE)  # adds 'File' and 'Network' cascades to
@@ -216,7 +217,7 @@ class CompetitorInfoFrame(Frame):
         self.parent.disable_frame(self.parent)
 
     def fill_competitor(self, id):
-        row = self.db.get_row(id)
+        row = self.db.get_row(id)  # get_row
         self.clear_competitor()
         self.idValue.set(id)
         self.fnameEntry.insert(0, row[1])
@@ -491,6 +492,13 @@ class CompetitorTable(Frame):
         self.sexLB.bind('<Double-Button-1>', self.edit_competitor)
         self.ageLB.bind('<Double-Button-1>', self.edit_competitor)
 
+        self.idLB.bind('<FocusOut>', lambda e: self.idLB.selection_clear(0, 'end'))  # these binds ensure that when
+        self.fnameLB.bind('<FocusOut>', lambda e: self.fnameLB.selection_clear(0, 'end'))  # leaving the table there
+        self.lnameLB.bind('<FocusOut>', lambda e: self.lnameLB.selection_clear(0, 'end'))  # doesn't remain a selection
+        self.levelLB.bind('<FocusOut>', lambda e: self.levelLB.selection_clear(0, 'end'))  # despite not having focus
+        self.sexLB.bind('<FocusOut>', lambda e: self.sexLB.selection_clear(0, 'end'))
+        self.ageLB.bind('<FocusOut>', lambda e: self.ageLB.selection_clear(0, 'end'))
+
         scrollbar.config(command=self.set_scrollables)
 
         scrollbar.pack(side='right', fill='y', expand=True)
@@ -508,7 +516,6 @@ class CompetitorTable(Frame):
         CompetitorRegistrationWindow(self, self.db)
 
     def get_selected_competitor(self):
-        row = 0
         if len(self.idLB.curselection()) > 0:
             row = self.idLB.curselection()
         elif len(self.fnameLB.curselection()) > 0:
@@ -525,7 +532,12 @@ class CompetitorTable(Frame):
         return row
 
     def delete_competitor(self, *args):
-        self.db.delete_row(self.idLB.get(self.get_selected_competitor()))
+        try:
+            competitor_id = self.idLB.get(self.get_selected_competitor())
+        except UnboundLocalError:  # occurs when there is no competitor selected
+            print('cannot delete a competitor when there is none selected')
+            return
+        self.db.delete_row(competitor_id)
 
     def edit_competitor(self, *args):
         id = self.get_selected_competitor()
@@ -690,3 +702,6 @@ class QuickCommand(Frame):
 
         self.db.update_row(id, tuple(newinfo))  # loads new info to the database
         self.parent.update_all()  # updates displays
+
+
+# add merge/new dialogue for open file dialog

@@ -32,14 +32,20 @@ class Application(Frame):
 
         self.parent.protocol('WM_DELETE_WINDOW', self.ioHandler.close)  # handles clicking 'X' button with .close func
 
-    def handle_fonts(self, obj):
+    def handle_fonts(self, obj):  # the font object in each class will consist of a font family and % of screen height
+        # screen_width = self.parent.winfo_screenwidth()
+        screen_height = self.parent.winfo_screenheight()
+
         for widget in obj.winfo_children():
             self.handle_fonts(widget)
             try:
-                widget.configure(font=general)
-            except TclError:
-                print('tclError')
-
+                scaled_font = (widget.font[0], round(widget.font[1] * screen_height))
+                try:
+                    widget.configure(font=scaled_font)
+                except TclError:
+                    print('tclError')
+            except AttributeError:
+                print('attributeError')
 
     def update_all(self):  # app method where things that need to be updated whenever some data manip occurs
         self.standingsTab.update_all()  # updates every standings table

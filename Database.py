@@ -4,6 +4,12 @@ import threading
 import time
 from tkinter import Toplevel, Entry, Label, Button
 
+###################################################################################################################
+# getters should not go to the global db first, rather local should be interacted with as it was before implementation
+# of global. this will keep fluidity of usage without constantly interacting with ghost rows. setters can attempt to
+# interact with the global first because these will not affect what is scene (which is to say fluidity)
+# getters: get_row, get_all, get_specific, get_specific_rows_by_score
+###################################################################################################################
 
 # because the global database will not always be accessible, but the interaction with the data
 # should remain fluid and uninterrupted, this handler will dynamically switch between the local
@@ -14,7 +20,7 @@ class DatabaseHandler:
 
         self.cont = True  # flag for maintaining update loop
         self.updateFlag = False
-        self.delay = 5  # seconds between global database updates
+        self.delay = 6  # seconds between global database updates
         self.timer = threading.Timer(self.delay, self.update)  # creates a thread for the timer
         self.timer.start()  # starts timer in separate thread
 
@@ -73,15 +79,20 @@ class DatabaseHandler:
         except pymysql.Error:
             print('pymysql error in: insert_row')
             self.unsyncedRows.append(('INSERT', row))
+        print('performed insert_row:', row)
 
     def insert_rows(self, rows):
         self.localdb.insert_rows(rows)
+        print('local rows inserted')
         try:
             self.globaldb.insert_rows(rows)
+            print('global insert successful')
         except pymysql.Error:
             print('pymysql error in: insert_rows')
             for row in rows:
                 self.unsyncedRows.append(('INSERT', row))
+                print('new unsynced row appended')
+        print('performed insert_rows:', rows)
 
     def delete_row(self, id):
         self.localdb.delete_row(id)
@@ -90,6 +101,7 @@ class DatabaseHandler:
         except pymysql.Error:
             print('pymysql error in: delete_row')
             self.unsyncedRows.append(('DELETE', id))
+        print('performed delete_row:', id)
 
     def delete_all(self):
         self.localdb.delete_all()
@@ -98,38 +110,33 @@ class DatabaseHandler:
         except pymysql.Error:
             print('pymysql error in: delete_all')
             self.unsyncedRows.append(('DELETE ALL',))
+        print('performed delete_all')
 
     def get_all(self):
-        try:
-            rows = self.globaldb.get_all()
-        except pymysql.Error:
-            print('pymysql error in: get_all')
-            rows = self.localdb.get_all()
+        rows = self.localdb.get_all()
+        print('performed get_all:', rows)
         return rows
 
     def get_row(self, id):
-        try:
-            row = self.globaldb.get_row(id)
-        except pymysql.Error:
-            print('pymysql error in: get_row')
-            row = self.localdb.get_row(id)
+        row = self.localdb.get_row(id)
+        print('performed get_row:', row)
         return row
 
     def get_specific_rows_by_score(self, **kwargs):
-        try:
-            rows = self.globaldb.get_specific_rows_by_score(**kwargs)
-        except pymysql.Error:
-            print('pymysql error in: get_specific_rows_by_score')
-            rows = self.localdb.get_specific_rows_by_score(**kwargs)
+        rows = self.localdb.get_specific_rows_by_score(**kwargs)
+        print('performed get_specific_rows_by_score:', rows)
         return rows
 
     def get_specific(self, pattern):
-        try:
-            rows = self.globaldb.get_specific(pattern)
-        except pymysql.Error:
-            print('pymysql error in: get_specific')
-            rows = self.localdb.get_specific(pattern)
+        rows = self.localdb.get_specific(pattern)
+        print('performed get_specific:', rows)
         return rows
+#        try:
+#            rows = self.globaldb.get_specific(pattern)
+#        except pymysql.Error:
+#            print('pymysql error in: get_specific')
+#            rows = self.localdb.get_specific(pattern)
+#        return rows            # this method of getter is likely deprecated, as mentioned in the comment at the top
 
     def update_row(self, id, info):
         self.localdb.update_row(id, info)
@@ -138,6 +145,9 @@ class DatabaseHandler:
         except pymysql.Error:
             print('pymysql error in: update_row')
             self.unsyncedRows.append(('UPDATE', id, info))
+        print('performed update_row:', id, info)
+
+    #def open_to_global(self):
 
 
 # database containing all the competitors and their information
@@ -213,7 +223,7 @@ class LocalDatabase:
                           score = ?, r1 = ?, r2 = ?, r3 = ?, r4 = ?, r5 = ?,
                           a1 = ?, a2 = ?, a3 = ?, a4 = ?, a5 = ?
                           WHERE id = ?''', ordered)
-        self.parent.update_all()
+        self.parent.parent.update_all()
 
 
 class GlobalDatabase:
@@ -264,10 +274,12 @@ class GlobalDatabase:
 
     def insert_rows(self, rows):
         self.connect()
+        print('connected in insert_rows')
         with self.conn.cursor() as c:
             for row in rows:
                 c.execute('''INSERT INTO `competitors` (`fname`, `lname`, `level`, `sex`, `age`, `score`, `r1`, `r2`, `r3`, `r4`, `r5`, `a1`, `a2`, `a3`, `a4`, `a5`)
                                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''', row)
+                print('row inserted')
         self.end()
 
     def delete_row(self, id):

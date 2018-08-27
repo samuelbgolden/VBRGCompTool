@@ -44,16 +44,11 @@ class IOHandler:
                 return
         self.filename = askopenfilename(initialdir="C:/", title="Open file",
                                         filetypes=(("CSV File", "*.csv"), ("all files", "*.*")))
-        print('filename gotten')
         with open(self.filename, 'r', newline='') as file:
-            print('file opened')
             reader = csv.reader(file)
-            self.db.delete_all()
-            print('db.delete_all called from open')
+            self.db.localdb.delete_all()
             self.db.insert_rows(reader)
-            print('db.insert_rows called from open')
         self.parent.parent.title('Working in competition at ' + os.path.splitext(self.filename)[0])
-        print('open file protocol concluded')
 
     def write_all(self):
         if '.csv' not in self.filename:

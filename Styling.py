@@ -1,5 +1,3 @@
-from tkinter import font
-
 # COLORS #
 LLBLUE = '#E3EDFD'
 LBLUE = '#9EC1FD'
@@ -9,4 +7,6 @@ DDBLUE = '#196EFF'
 
 # FONTS #
 
-general = ('Verdana', '-12')
+general = ('Verdana', '-13')
+larger = ('Verdana', '-15')
+

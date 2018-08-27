@@ -42,6 +42,8 @@ class CompetitorSelectionFrame(Frame):
         self.parent = parent
         self.db = db
 
+        self.font = ('Impact', -0.066)
+
         self.buttonTexts = ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
                             'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
                             'W', 'X', 'Y', 'Z')
@@ -53,7 +55,7 @@ class CompetitorSelectionFrame(Frame):
 
         for i in range(0, 26):
             self.alphabetButtons.append(Button(self, text=self.buttonTexts[i], relief=FLAT, activebackground='white',
-                                               bg=blues[i], fg='white', width=6,
+                                               bg=blues[i], fg='white',
                                                command=lambda i=i: self.show_filtered_competitors(self.buttonTexts[i])))
             self.alphabetButtons[i].grid(row=i // 2, column=i % 2, sticky='nsew')
             self.rowconfigure(i // 2, weight=1)
