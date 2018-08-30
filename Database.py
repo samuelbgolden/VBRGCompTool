@@ -11,144 +11,6 @@ from tkinter import Toplevel, Entry, Label, Button
 # getters: get_row, get_all, get_specific, get_specific_rows_by_score
 ###################################################################################################################
 
-# because the global database will not always be accessible, but the interaction with the data
-# should remain fluid and uninterrupted, this handler will dynamically switch between the local
-# and global databases depending on whether or not the global database is currently accessible
-class DatabaseHandler:
-    def __init__(self, parent):
-        self.parent = parent
-
-        self.cont = True  # flag for maintaining update loop
-        self.updateFlag = False
-        self.delay = 6  # seconds between global database updates
-        self.timer = threading.Timer(self.delay, self.update)  # creates a thread for the timer
-        self.timer.start()  # starts timer in separate thread
-
-        self.localdb = LocalDatabase(self)
-        self.globaldb = GlobalDatabase(self)
-
-        self.unsyncedRows = []
-
-    def update(self):
-        print("~~~~~~~~~~ update func call at:", time.time(), "~~~~~~~~~~")
-
-        if self.cont:
-            self.timer = threading.Timer(self.delay, self.update)  # creates a thread for the timer
-            self.timer.start()  # starts timer in separate thread
-        self.updateFlag = True
-
-    def update_main(self):
-        if self.updateFlag:
-            try:
-                while self.unsyncedRows:
-                    print('tending to unsynced rows:', self.unsyncedRows)
-                    if self.unsyncedRows[0][0] == 'INSERT':     # the redundancy in these if blocks
-                        item = self.unsyncedRows[0]             # is necessary, because we want to keep
-                        self.globaldb.insert_row(item[1])       # the unsynced row in the list if the action
-                        self.unsyncedRows.pop(0)                # returns an error
-                        print('insert performed')
-                    elif self.unsyncedRows[0][0] == 'DELETE':
-                        item = self.unsyncedRows[0]
-                        self.globaldb.delete_row(item[1])
-                        self.unsyncedRows.pop(0)
-                        print('delete performed')
-                    elif self.unsyncedRows[0][0] == 'DELETE ALL':
-                        self.globaldb.delete_all()
-                        self.unsyncedRows.pop(0)
-                        print('delete all performed')
-                    elif self.unsyncedRows[0][0] == 'UPDATE':
-                        item = self.unsyncedRows[0]
-                        self.globaldb.update_row(item[1], item[2])
-                        self.unsyncedRows.pop(0)
-                        print('update performed')
-                print('unsynced dealt with')
-                globalrows = list(self.globaldb.get_all())
-                localrows = self.localdb.get_all()
-                if not localrows == globalrows:
-                    self.localdb.delete_all()
-                    self.localdb.insert_rows(globalrows)
-            except pymysql.Error:
-                print('pymysql error in: update_main')
-            self.updateFlag = False
-        self.parent.parent.after(1000, self.update_main)
-
-    def insert_row(self, row):
-        self.localdb.insert_row(row)
-        try:
-            self.globaldb.insert_row(row)
-        except pymysql.Error:
-            print('pymysql error in: insert_row')
-            self.unsyncedRows.append(('INSERT', row))
-        print('performed insert_row:', row)
-
-    def insert_rows(self, rows):
-        self.localdb.insert_rows(rows)
-        print('local rows inserted')
-        try:
-            self.globaldb.insert_rows(rows)
-            print('global insert successful')
-        except pymysql.Error:
-            print('pymysql error in: insert_rows')
-            for row in rows:
-                self.unsyncedRows.append(('INSERT', row))
-                print('new unsynced row appended')
-        print('performed insert_rows:', rows)
-
-    def delete_row(self, id):
-        self.localdb.delete_row(id)
-        try:
-            self.globaldb.delete_row(id)
-        except pymysql.Error:
-            print('pymysql error in: delete_row')
-            self.unsyncedRows.append(('DELETE', id))
-        print('performed delete_row:', id)
-
-    def delete_all(self):
-        self.localdb.delete_all()
-        try:
-            self.globaldb.delete_all()
-        except pymysql.Error:
-            print('pymysql error in: delete_all')
-            self.unsyncedRows.append(('DELETE ALL',))
-        print('performed delete_all')
-
-    def get_all(self):
-        rows = self.localdb.get_all()
-        print('performed get_all:', rows)
-        return rows
-
-    def get_row(self, id):
-        row = self.localdb.get_row(id)
-        print('performed get_row:', row)
-        return row
-
-    def get_specific_rows_by_score(self, **kwargs):
-        rows = self.localdb.get_specific_rows_by_score(**kwargs)
-        print('performed get_specific_rows_by_score:', rows)
-        return rows
-
-    def get_specific(self, pattern):
-        rows = self.localdb.get_specific(pattern)
-        print('performed get_specific:', rows)
-        return rows
-#        try:
-#            rows = self.globaldb.get_specific(pattern)
-#        except pymysql.Error:
-#            print('pymysql error in: get_specific')
-#            rows = self.localdb.get_specific(pattern)
-#        return rows            # this method of getter is likely deprecated, as mentioned in the comment at the top
-
-    def update_row(self, id, info):
-        self.localdb.update_row(id, info)
-        try:
-            self.globaldb.update_row(id, info)
-        except pymysql.Error:
-            print('pymysql error in: update_row')
-            self.unsyncedRows.append(('UPDATE', id, info))
-        print('performed update_row:', id, info)
-
-    #def open_to_global(self):
-
 
 # database containing all the competitors and their information
 # accessed by nearly every class
@@ -160,27 +22,27 @@ class LocalDatabase:
         self.c = self.conn.cursor()
 
         self.c.execute('''CREATE TABLE competitors
-                     (id integer, fname text, lname text, level text, sex text, age int,
+                     (id integer primary key, fname text, lname text, level text, sex text, age int,
                       score int, r1 int, r2 int, r3 int, r4 int, r5 int, a1 int, a2 int, a3 int, a4 int, a5 int)''')
 
     def insert_row(self, row):  # row should be a set of values of length 16
         self.c.execute('''INSERT INTO competitors (fname, lname, level, sex, age, score, r1, r2, r3, r4, r5, a1, a2, a3, a4, a5)
                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', row)
-        self.parent.parent.update_all()
+        self.parent.update_all()
 
     def insert_rows(self, rows):
         self.c.executemany('''INSERT INTO competitors (id, fname, lname, level, sex, age, score, r1, r2, r3, r4, r5, a1, a2, a3, a4, a5)
                             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', rows)
-        self.parent.parent.update_all()
+        self.parent.update_all()
 
     def delete_row(self, id):
         self.c.execute('''DELETE FROM competitors WHERE id = ?''', (id,))
-        self.parent.parent.update_all()
+        self.parent.update_all()
 
     def delete_all(self):
         print('delete all LOCAL')
         self.c.execute('DELETE FROM competitors')
-        self.parent.parent.update_all()
+        self.parent.update_all()
 
     def get_all(self):
         self.c.execute('SELECT * FROM competitors ORDER BY lname COLLATE NOCASE')
@@ -223,7 +85,7 @@ class LocalDatabase:
                           score = ?, r1 = ?, r2 = ?, r3 = ?, r4 = ?, r5 = ?,
                           a1 = ?, a2 = ?, a3 = ?, a4 = ?, a5 = ?
                           WHERE id = ?''', ordered)
-        self.parent.parent.update_all()
+        self.parent.update_all()
 
 
 class GlobalDatabase:
@@ -234,7 +96,49 @@ class GlobalDatabase:
         self.password = password
         self.address = address
         self.database = database
+
+        self.cont = True  # flag for maintaining update loop
+        self.updateFlag = True
+        self.delay = 6  # seconds between global database updates
+        self.timer = threading.Timer(self.delay, self.update)  # creates a thread for the timer
+        self.timer.start()  # starts timer in separate thread
+        self.unsyncedRows = []
+
         self.conn = None
+
+    def update(self):
+        print("~~~~~~~~~~ update func call at:", time.time(), "~~~~~~~~~~")
+
+        if self.cont:
+            self.timer = threading.Timer(self.delay, self.update)  # creates a thread for the timer
+            self.timer.start()  # starts timer in separate thread
+        self.updateFlag = True
+
+    def update_main(self):
+        if self.updateFlag:
+            try:
+                while self.unsyncedRows:
+                    print('tending to unsynced rows:', self.unsyncedRows)
+                    if self.unsyncedRows[0][0] == 'INSERT':     # the redundancy in these if blocks
+                        item = self.unsyncedRows[0]             # is necessary, because we want to keep
+                        self.insert_row(item[1])       # the unsynced row in the list if the action
+                        self.unsyncedRows.pop(0)                # returns an error
+                    elif self.unsyncedRows[0][0] == 'DELETE':
+                        item = self.unsyncedRows[0]
+                        self.delete_row(item[1])
+                        self.unsyncedRows.pop(0)
+                    elif self.unsyncedRows[0][0] == 'DELETE ALL':
+                        self.delete_all()
+                        self.unsyncedRows.pop(0)
+                    elif self.unsyncedRows[0][0] == 'UPDATE':
+                        item = self.unsyncedRows[0]
+                        self.update_row(item[1], item[2])
+                        self.unsyncedRows.pop(0)
+            except pymysql.Error:
+                pass
+            self.updateFlag = False
+            self.parent.update_all()
+        self.parent.parent.after(10, self.update_main)
 
     def connect(self):
         self.conn = pymysql.connect(self.address, self.user, self.password, self.database)
@@ -253,7 +157,7 @@ class GlobalDatabase:
             else:
                 return False
         except pymysql.Error:
-            print('pymysql error in: is_connected')
+            pass
         return False
 
     def is_configured(self):
@@ -261,41 +165,47 @@ class GlobalDatabase:
 
     def end(self):
         self.conn.commit()
-        print('any sql changes committed')
-        self.parent.parent.update_all()
-        print('update_all called')
+        self.parent.update_all()
 
     def insert_row(self, row):
-        self.connect()
-        with self.conn.cursor() as c:
-            c.execute('''INSERT INTO `competitors` (`fname`, `lname`, `level`, `sex`, `age`, `score`, `r1`, `r2`, `r3`, `r4`, `r5`, `a1`, `a2`, `a3`, `a4`, `a5`)
-                                  VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''', row)
-        self.end()
+        try:
+            self.connect()
+            with self.conn.cursor() as c:
+                c.execute('''INSERT INTO `competitors` (`fname`, `lname`, `level`, `sex`, `age`, `score`, `r1`, `r2`, `r3`, `r4`, `r5`, `a1`, `a2`, `a3`, `a4`, `a5`)
+                                      VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''', row)
+            self.end()
+        except pymysql.Error:
+            self.unsyncedRows.append(('INSERT', row))
 
     def insert_rows(self, rows):
-        self.connect()
-        print('connected in insert_rows')
-        with self.conn.cursor() as c:
+        try:
+            self.connect()
+            with self.conn.cursor() as c:
+                for row in rows:
+                    c.execute('''INSERT INTO `competitors` (`fname`, `lname`, `level`, `sex`, `age`, `score`, `r1`, `r2`, `r3`, `r4`, `r5`, `a1`, `a2`, `a3`, `a4`, `a5`)
+                                                  VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''', row)
+            self.end()
+        except pymysql.Error:
             for row in rows:
-                c.execute('''INSERT INTO `competitors` (`fname`, `lname`, `level`, `sex`, `age`, `score`, `r1`, `r2`, `r3`, `r4`, `r5`, `a1`, `a2`, `a3`, `a4`, `a5`)
-                                  VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''', row)
-                print('row inserted')
-        self.end()
+                self.unsyncedRows.append(('INSERT', row))
 
     def delete_row(self, id):
-        self.connect()
-        print('connect called in global.delete_row')
-        with self.conn.cursor() as c:
-            c.execute('''DELETE FROM `competitors` WHERE `id` = %s''', (id,))
-            print('sql executed in global.delete_row')
-        self.end()
-        print('end called in global.delete_row')
+        try:
+            self.connect()
+            with self.conn.cursor() as c:
+                c.execute('''DELETE FROM `competitors` WHERE `id` = %s''', (id,))
+            self.end()
+        except pymysql.Error:
+            self.unsyncedRows.append(('DELETE', id))
 
     def delete_all(self):
-        self.connect()
-        with self.conn.cursor() as c:
-            c.execute('''DELETE FROM `competitors` WHERE `id` > 0''')
-        self.end()
+        try:
+            self.connect()
+            with self.conn.cursor() as c:
+                c.execute('''DELETE FROM `competitors` WHERE `id` > 0''')
+            self.end()
+        except pymysql.Error:
+            self.unsyncedRows.append(('DELETE ALL',))
 
     def get_all(self):
         self.connect()
@@ -345,16 +255,18 @@ class GlobalDatabase:
         return records
 
     def update_row(self, id, info):
-        self.connect()
-
-        ordered = info + (id,)
-        with self.conn.cursor() as c:
-            c.execute('''UPDATE `competitors` 
-                            SET `fname` = %s, `lname` = %s, `level` = %s, `sex` = %s, `age` = %s, 
-                            `score` = %s, `r1` = %s, `r2` = %s, `r3` = %s, `r4` = %s, `r5` = %s,
-                            `a1` = %s, `a2` = %s, `a3` = %s, `a4` = %s, `a5` = %s
-                            WHERE `id` = %s''', ordered)
-        self.end()
+        try:
+            self.connect()
+            ordered = info + (id,)
+            with self.conn.cursor() as c:
+                c.execute('''UPDATE `competitors` 
+                                            SET `fname` = %s, `lname` = %s, `level` = %s, `sex` = %s, `age` = %s, 
+                                            `score` = %s, `r1` = %s, `r2` = %s, `r3` = %s, `r4` = %s, `r5` = %s,
+                                            `a1` = %s, `a2` = %s, `a3` = %s, `a4` = %s, `a5` = %s
+                                            WHERE `id` = %s''', ordered)
+            self.end()
+        except pymysql.Error:
+            self.unsyncedRows.append(('UPDATE', id, info))
 
 
 class NetworkConfigurationWindow(Toplevel):

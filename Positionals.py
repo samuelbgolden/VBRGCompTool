@@ -25,8 +25,8 @@ class MenuBar(Menu):
         self.filemenu.add_command(label="Close", command=self.io.close)
 
         self.networkmenu = Menu(self, tearoff=0)  # creates 'Network' cascade
-        self.networkmenu.add_command(label="Connect to database", command=self.db.globaldb.connect)
-        self.networkmenu.add_command(label="Configure database connection", command=self.db.globaldb.prompt)
+       # self.networkmenu.add_command(label="Connect to database", command=self.db.connect)
+       # self.networkmenu.add_command(label="Configure database connection", command=self.db.prompt)
        # self.networkmenu.add_command(label="Insert competition in global database", command=self.db.open_to_global)
        # self.networkmenu.add_command(label="Refresh from database", command=self.gdb.pull)
 
@@ -60,22 +60,8 @@ class EntryTab(Frame):
 
     def foc_in(self, *args):  #
         if self.competitorInfoFrame.idValue.get() == 0:  # checks if the id of competitor has changed from default value
-            self.disable_frame(self.competitorInfoFrame)  # disables competitorInfoFrame
-            self.disable_frame(self.routeAttemptsEntryFrame)  # disables routeAttemptsEntryFrame
-
-    def disable_frame(self, frame):  # loops recursively through all frame children disabling their normal widgets
-        for widget in frame.winfo_children():  # gets each widget that is a child of the passed widget
-            if widget.winfo_class() == 'Frame':  # if the child is a frame (frames themselves cannot be disabled),
-                self.disable_frame(widget)       # this func is called on that frame
-            else:
-                widget.configure(state='disable')  # disables widgets that are not frames
-
-    def enable_frame(self, frame):  # loops recursively through all frame children enabling child non-frame widgets
-        for widget in frame.winfo_children():  # gets each widget that is a child of the passed widget
-            if widget.winfo_class() == 'Frame':  # checks if child widget is a Frame
-                self.enable_frame(widget)  # calls this func on widget if Frame
-            else:
-                widget.configure(state='normal')  # enables non-Frame widgets
+            disable_frame(self.competitorInfoFrame)  # disables competitorInfoFrame
+            disable_frame(self.routeAttemptsEntryFrame)  # disables routeAttemptsEntryFrame
 
 
 # a frame that will display the buttons which can select attempts needed to finish up to 5 routes
@@ -214,7 +200,7 @@ class CompetitorInfoFrame(Frame):
         for i in (0, Grid.grid_size(self.routeListingFrame)[0]):
             Grid.grid_columnconfigure(self.routeListingFrame, i, weight=1)
 
-        self.parent.disable_frame(self.parent)
+        disable_frame(self.parent)
 
     def fill_competitor(self, id):
         row = self.db.get_row(id)  # get_row
@@ -301,8 +287,8 @@ class CompetitorInfoFrame(Frame):
         self.db.update_row(self.idValue.get(), row)  # loads info to database
         self.clear_competitor()  # clears competitor info in entries
         self.parent.routeAttemptsEntryFrame.reset()  # resets route entries back to gray state with no values
-        self.parent.disable_frame(self)  # disables competitorInfoFrame
-        self.parent.disable_frame(self.parent.routeAttemptsEntryFrame)  # disables routeAttemptsEntryFrame
+        disable_frame(self)  # disables competitorInfoFrame
+        disable_frame(self.parent.routeAttemptsEntryFrame)  # disables routeAttemptsEntryFrame
         self.parent.parent.competitorTab.competitorFrame.competitorSearchBar.clear()
 
     def calc_score(self):
@@ -393,7 +379,7 @@ class CategoricalStandings(Frame):
 
     def update_table(self):
         self.clear_table()
-        rows = self.db.localdb.get_specific_rows_by_score(**self.selectedAttributes)
+        rows = self.db.get_specific_rows_by_score(**self.selectedAttributes)
         if rows:
             self.titleString.set('{} | {} ({})'.format(self.selectedAttributes['level'],
                                                        self.selectedAttributes['sex'],
@@ -546,8 +532,8 @@ class CompetitorTable(Frame):
             entrytab = self.parent.parent.parent.entryTab
 
             entrytab.routeAttemptsEntryFrame.reset()
-            entrytab.enable_frame(entrytab.competitorInfoFrame)
-            entrytab.enable_frame(entrytab.routeAttemptsEntryFrame)
+            enable_frame(entrytab.competitorInfoFrame)
+            enable_frame(entrytab.routeAttemptsEntryFrame)
             entrytab.competitorInfoFrame.fill_competitor(self.idLB.get(id))  # fills info to entry
 
     def set_scrollables(self, *args):

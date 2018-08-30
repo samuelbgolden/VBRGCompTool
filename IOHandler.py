@@ -13,9 +13,7 @@ class IOHandler:
         self.parent = parent
 
     def new(self):
-        if self.is_saved():
-            return
-        else:
+        if not self.is_saved():
             a = prompt_save()
             if a:
                 self.save()
@@ -46,7 +44,7 @@ class IOHandler:
                                         filetypes=(("CSV File", "*.csv"), ("all files", "*.*")))
         with open(self.filename, 'r', newline='') as file:
             reader = csv.reader(file)
-            self.db.localdb.delete_all()
+            self.db.delete_all()
             self.db.insert_rows(reader)
         self.parent.parent.title('Working in competition at ' + os.path.splitext(self.filename)[0])
 

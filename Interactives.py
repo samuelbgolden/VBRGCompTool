@@ -148,3 +148,19 @@ def mk_int(s):
 # will display a toplevel window with info on how to use the QuickCommand line
 def show_usage_help():
     window = Toplevel()
+
+
+def disable_frame(frame):  # loops recursively through all frame children disabling their normal widgets
+    for widget in frame.winfo_children():  # gets each widget that is a child of the passed widget
+        if widget.winfo_class() == 'Frame':  # if the child is a frame (frames themselves cannot be disabled),
+            disable_frame(widget)       # this func is called on that frame
+        else:
+            widget.configure(state='disable')  # disables widgets that are not frames
+
+
+def enable_frame(frame):  # loops recursively through all frame children enabling child non-frame widgets
+    for widget in frame.winfo_children():  # gets each widget that is a child of the passed widget
+        if widget.winfo_class() == 'Frame':  # checks if child widget is a Frame
+            enable_frame(widget)  # calls this func on widget if Frame
+        else:
+            widget.configure(state='normal')  # enables non-Frame widgets
