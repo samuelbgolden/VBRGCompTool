@@ -44,8 +44,11 @@ class IOHandler:
                                         filetypes=(("CSV File", "*.csv"), ("all files", "*.*")))
         with open(self.filename, 'r', newline='') as file:
             reader = csv.reader(file)
+            rows = []
+            for row in reader:
+                rows.append(row[1:])
             self.db.delete_all()
-            self.db.insert_rows(reader)
+            self.db.insert_rows(rows)
         self.parent.parent.title('Working in competition at ' + os.path.splitext(self.filename)[0])
 
     def write_all(self):

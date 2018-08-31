@@ -42,7 +42,8 @@ class CompetitorSelectionFrame(Frame):
         self.parent = parent
         self.db = db
 
-        self.font = ('Impact', -0.066)
+        self.font = ['Tahoma', -0.0345]
+        self.font[1] = round(self.font[1] * self.parent.parent.SCREEN_HEIGHT)
 
         self.buttonTexts = ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
                             'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
@@ -55,10 +56,11 @@ class CompetitorSelectionFrame(Frame):
 
         for i in range(0, 26):
             self.alphabetButtons.append(Button(self, text=self.buttonTexts[i], relief=FLAT, activebackground='white',
-                                               bg=blues[i], fg='white',
+                                               bg=blues[i], fg='white', font=self.font, bd=0, highlightthickness=0,
                                                command=lambda i=i: self.show_filtered_competitors(self.buttonTexts[i])))
             self.alphabetButtons[i].grid(row=i // 2, column=i % 2, sticky='nsew')
             self.rowconfigure(i // 2, weight=1)
+            self.columnconfigure(i % 2, weight=1)
 
     def show_filtered_competitors(self, letter):
         self.parent.competitorFrame.competitorSearchBar.foc_in()
@@ -122,8 +124,13 @@ class RouteAttemptsEntry(Frame):
 # updates table based on entered pattern in search box
 class CompetitorSearchBox(EntryWithPlaceholder):
     def __init__(self, parent, *args, **kwargs):
+        self.parent=parent
+
+        self.font = ['Tahoma', -0.020]
+        self.font[1] = round(self.font[1] * self.parent.parent.parent.SCREEN_HEIGHT)
+
         self.content = StringVar()
-        super().__init__(parent, placeholder='Search competitors...', background=LLBLUE, color=DDBLUE, textvariable=self.content)
+        super().__init__(parent, placeholder='Search competitors...', background=LLBLUE, color=DDBLUE, textvariable=self.content, font=self.font)
         self.parent = parent
 
         self.content.trace('w', self.update_results)

@@ -12,6 +12,9 @@ class Application(Frame):
 
         self.config(bg=LBLUE)  # the background for the frame containing the whole application
 
+        self.SCREEN_HEIGHT = self.parent.winfo_screenheight()
+        self.SCREEN_WIDTH = self.parent.winfo_screenwidth()
+
         if user and password and address and database:
             self.databaseHandler = GlobalDatabase(self, user=user, password=password, address=address, database=database)
         else:
@@ -25,33 +28,22 @@ class Application(Frame):
         self.quickCommand = QuickCommand(self, self.databaseHandler)  # bottom bar that allows text based usage
         self.parent.configure(menu=self.menubar)  # declares menu to be the declared menubar object
 
-        self.handle_fonts(self)
-
-        self.quickCommand.pack(side='bottom', anchor=S, fill='x')
-        self.competitorTab.pack(side='left', anchor=W, fill='y')  # packs as left-most
-        self.entryTab.pack(side='left', anchor=W, fill='y')  # packs as second from left
-        self.standingsTab.pack(side='left', anchor=W, fill='y')  # packs as third from left
+        self.competitorTab.grid(row=0, column=0, sticky='nsew')
+        self.entryTab.grid(row=0, column=1, sticky='nsew')
+        self.standingsTab.grid(row=0, column=2, sticky='nsew')
+        self.quickCommand.grid(row=1, column=0, columnspan=3, sticky='nsew')
+        self.rowconfigure(0, weight=15)
+        self.rowconfigure(1, weight=1)
+        self.columnconfigure(0, weight=3)
+        self.columnconfigure(1, weight=2)
+        self.columnconfigure(2, weight=1)
 
         self.parent.protocol('WM_DELETE_WINDOW', self.ioHandler.close)  # handles clicking 'X' button with .close func
 
-    def handle_fonts(self, obj):  # the font object in each class will consist of a font family and % of screen height
-        # screen_width = self.parent.winfo_screenwidth()
-        screen_height = self.parent.winfo_screenheight()
-
-        for widget in obj.winfo_children():
-            self.handle_fonts(widget)
-            try:
-                scaled_font = (widget.font[0], round(widget.font[1] * screen_height))
-                try:
-                    widget.configure(font=scaled_font)
-                except TclError:
-                    print('tclError')
-            except AttributeError:
-                print('attributeError')
-
     def update_all(self):  # app method where things that need to be updated whenever some data manip occurs
         self.standingsTab.update_all()  # updates every standings table
-        self.competitorTab.competitorFrame.competitorTable.update_table()  # updates competitor list
+        compframe = self.competitorTab.competitorFrame
+        compframe.competitorTable.update_table(compframe.competitorSearchBar.content.get())  # updates competitor list
 
 
 ########################################################################################################################
@@ -114,6 +106,11 @@ class SessionPrompt(Frame):
         self.goButton.grid(row=5, column=0, columnspan=2, sticky='nsew')
 
         self.multipleFrame.grid_remove()
+        self.userEntry.bind('<Return>', self.connect_to_global)
+        self.passwordEntry.bind('<Return>', self.connect_to_global)
+        self.hostCheckbox.bind('<Return>', self.connect_to_global)
+        self.addressEntry.bind('<Return>', self.connect_to_global)
+        self.databaseEntry.bind('<Return>', self.connect_to_global)
 
     def affect_address_state(self):
         if self.hostVar.get():
@@ -132,19 +129,15 @@ class SessionPrompt(Frame):
             self.singleFrame.grid()
 
     def new_competition(self):
-        app = Application(self.parent, globaldb=False)
-        self.grid_remove()
-        app.grid(column=0, row=0, sticky='nsew')
-        self.parent.resizable(True, True)
+        app = Application(self.parent)
+        self.change_root_settings(app)
 
     def open_competition(self):
-        app = Application(self.parent, globaldb=False)
-        self.grid_remove()
+        app = Application(self.parent)
         app.ioHandler.open()
-        app.grid(column=0, row=0, sticky='nsew')
-        self.parent.resizable(True, True)
+        self.change_root_settings(app)
 
-    def connect_to_global(self):
+    def connect_to_global(self, *args):
         user = self.userEntry.get()
         password = self.passwordEntry.get()
         if self.hostVar.get():
@@ -153,10 +146,17 @@ class SessionPrompt(Frame):
             address = self.addressEntry.get()
         database = self.databaseEntry.get()
         app = Application(self.parent, user=user, password=password, address=address, database=database)
-        self.grid_remove()
-        app.grid(column=0, row=0, sticky='nsew')
-        self.parent.resizable(True, True)
+        self.change_root_settings(app)
         self.parent.after(0, app.databaseHandler.update_main())
+        # this statements queues the update_main function, which contains the same statement, queuing the update_main
+        # function. this allows the update_main func to be called repeatedly, simultaneous with the tkinter event loop.
+        # the update_main func has an initial check to see if it is time to do an update, which is based on a flag set
+        # in another thread. it is this multi-threading that necessitates this event-queuing.
+
+    def change_root_settings(self, app):
+        self.grid_remove()
+        self.parent.resizable(True, True)
+        app.grid(column=0, row=0, sticky='nsew')
 
 
 if __name__ == '__main__':  # checks if full code is being run, rather than being imported as a module
@@ -165,11 +165,6 @@ if __name__ == '__main__':  # checks if full code is being run, rather than bein
     options.grid(row=0, column=0, sticky='nsew')
 #    app = Application(root)
 #    app.grid(row=0, column=0, sticky='nsew')  # declares full app
-#    root.after(0, app.databaseHandler.update_main())  # this statements queues the update_main function, which contains
-                                                      # the same statement, queuing the update_main function. this
-                                                      # allows the update_main func to be called repeatedly,
-                                                      # simultaneous with the tkinter event loop. the update_main func
-                                                      # has an initial check to see if it is time to do an update, which
-                                                      # is based on a flag set in another thread. it is this multi-
-                                                      # threading that necessitates this event-queuing.
+#    root.after(0, app.databaseHandler.update_main())
+
     root.mainloop()  # runs tkinter action loop

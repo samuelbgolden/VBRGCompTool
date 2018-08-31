@@ -50,8 +50,11 @@ class EntryTab(Frame):
         self.routeAttemptsEntryFrame = RouteAttemptsEntryFrame(self, self.db, bg=LBLUE)  # creates frame for route btns
         self.competitorInfoFrame = CompetitorInfoFrame(self, self.db, bg=LBLUE)  # creates frame for individual info
 
-        self.competitorInfoFrame.pack(side=TOP, anchor=N + W, padx=10)  # packs 1st from top
-        self.routeAttemptsEntryFrame.pack(side=TOP, fill='y', anchor='center', padx=20, pady=10, expand=1)  # packs 2nd from top
+        self.competitorInfoFrame.grid(row=0, column=0, sticky='nsew')
+        self.routeAttemptsEntryFrame.grid(row=1, column=0, sticky='nsew')
+        self.rowconfigure(0, weight=1)
+        self.rowconfigure(1, weight=2)
+        self.columnconfigure(0, weight=1)
 
         self.bind('<FocusIn>', self.foc_in)  # when this widget gains focus, the 'foc_in' func is called
 
@@ -316,12 +319,15 @@ class StandingsTab(Frame):
         self.config(bg=DBLUE)
 
         self.title = Label(self, text='STANDINGS', bg=DBLUE, fg='white')
-        self.title.grid(row=0, column=0, columnspan=2, stick=N)
+        self.title.grid(row=0, column=0, columnspan=2, sticky='nsew')
+
+        self.rowconfigure(0, weight=1)
 
         self.standings = self.create_standard_standings()
         for i, standing in enumerate(self.standings):
-            standing.grid(row=(i % 4)+1, column=i//4, stick='ns')
-            self.rowconfigure((i % 4)+1, weight=1)
+            standing.grid(row=(i % 4)+1, column=i//4, sticky='nsew')
+            self.rowconfigure((i % 4)+1, weight=6)
+            self.columnconfigure(i//4, weight=1)
 
     def create_standard_standings(self):
         levels = ('Beginner', 'Intermediate', 'Advanced', 'Open')
@@ -346,6 +352,12 @@ class CategoricalStandings(Frame):
         self.parent = parent
         self.db = db
 
+        self.titleFont = ['Arial', -0.016]
+        self.font = ['Arial', -0.014]
+
+        self.titleFont[1] = round(self.titleFont[1] * self.parent.parent.SCREEN_HEIGHT)
+        self.font[1] = round(self.font[1] * self.parent.parent.SCREEN_HEIGHT)
+
         self.titlebg = LBLUE
         self.titlefg = 'black'
 
@@ -353,21 +365,30 @@ class CategoricalStandings(Frame):
         self.titleString = StringVar()
         self.titleString.set('{} | {} ({})'.format(level, sex, 0))
 
-        scrollbar = Scrollbar(self)
-        scrollbar.config(command=self.set_scrollables)
+        self.scrollbar = Scrollbar(self)
+        self.scrollbar.config(command=self.set_scrollables)
 
-        self.title = Label(self, textvariable=self.titleString, bg=self.titlebg, fg=self.titlefg)
-        self.idLB = Listbox(self, yscrollcommand=scrollbar.set, borderwidth=0, width=3, activestyle='none')
-        self.fnameLB = Listbox(self, yscrollcommand=scrollbar.set, borderwidth=0, width=10, activestyle='none')
-        self.lnameLB = Listbox(self, yscrollcommand=scrollbar.set, borderwidth=0, width=18, activestyle='none')
-        self.scoreLB = Listbox(self, yscrollcommand=scrollbar.set, borderwidth=0, width=10, activestyle='none')
+        self.title = Label(self, textvariable=self.titleString, bg=self.titlebg, fg=self.titlefg, font=self.titleFont)
+        self.idLB = Listbox(self, yscrollcommand=self.y_scroll, borderwidth=0, width=3, activestyle='none', font=self.font)
+        self.fnameLB = Listbox(self, yscrollcommand=self.y_scroll, borderwidth=0, width=15, activestyle='none', font=self.font)
+        self.lnameLB = Listbox(self, yscrollcommand=self.y_scroll, borderwidth=0, width=15, activestyle='none', font=self.font)
+        self.scoreLB = Listbox(self, yscrollcommand=self.y_scroll, borderwidth=0, width=10, activestyle='none', font=self.font)
 
-        scrollbar.pack(side='right', fill='y', expand=True),
-        self.title.pack(side='top', fill='x', expand=False)
-        self.idLB.pack(side='left', fill='y', expand=True)
-        self.fnameLB.pack(side='left', fill='y', expand=True)
-        self.lnameLB.pack(side='left', fill='y', expand=True)
-        self.scoreLB.pack(side='left', fill='y', expand=True)
+        self.listboxes = (self.idLB, self.fnameLB, self.lnameLB, self.scoreLB)
+
+        self.title.grid(row=0, column=0, columnspan=5, sticky='nsew')
+        self.idLB.grid(row=1, column=0, sticky='nsew')
+        self.fnameLB.grid(row=1, column=1, sticky='nsew')
+        self.lnameLB.grid(row=1, column=2, sticky='nsew')
+        self.scoreLB.grid(row=1, column=3, sticky='nsew')
+        self.scrollbar.grid(row=1, column=4, sticky='nsew')
+        self.rowconfigure(0, weight=1)
+        self.rowconfigure(1, weight=6)
+        self.columnconfigure(0, weight=3)
+        self.columnconfigure(1, weight=10)
+        self.columnconfigure(2, weight=18)
+        self.columnconfigure(3, weight=10)
+        self.columnconfigure(4, weight=1)
 
         self.update_table()
 
@@ -376,6 +397,11 @@ class CategoricalStandings(Frame):
         self.fnameLB.yview(*args)
         self.lnameLB.yview(*args)
         self.scoreLB.yview(*args)
+
+    def y_scroll(self, *args):
+        for lb in self.listboxes:
+            lb.yview_moveto(args[0])
+        self.scrollbar.set(*args)
 
     def update_table(self):
         self.clear_table()
@@ -415,8 +441,10 @@ class CompetitorTab(Frame):
         self.competitorFrame = CompetitorFrame(self, self.db)
         self.competitorSelectionFrame = CompetitorSelectionFrame(self, self.db)
 
-        self.competitorSelectionFrame.pack(side=LEFT, expand=1, fill='y')
-        self.competitorFrame.pack(side=LEFT, expand=1, fill='y')
+        self.competitorSelectionFrame.grid(row=0, column=0, sticky='nsew')
+        self.competitorFrame.grid(row=0, column=1, sticky='nsew')
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=6)
 
 
 # frame containing the search bar and table of competitors
@@ -429,13 +457,16 @@ class CompetitorFrame(Frame):
 
         self.competitorSearchBar = CompetitorSearchBox(self)
         self.competitorTable = CompetitorTable(self, self.db, background=DBLUE)
-        self.clearSearchButton = Button(self, text='CLEAR', background=BLUE, foreground='white', command=self.competitorSearchBar.clear)
+        self.clearSearchButton = Button(self, text='CLEAR', background=BLUE, foreground='white',
+                                        font=self.competitorSearchBar.font, command=self.competitorSearchBar.clear)
 
         self.competitorSearchBar.grid(row=0, column=0, sticky='nsew')
-        self.clearSearchButton.grid(row=0, column=1, sticky='e')
+        self.clearSearchButton.grid(row=0, column=1, sticky='nsew')
         self.competitorTable.grid(row=1, column=0, sticky='nsew', columnspan=2)
-        self.rowconfigure(1, weight=1)
-        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        self.rowconfigure(1, weight=30)
+        self.columnconfigure(1, weight=1)
+        self.columnconfigure(0, weight=20)
 
 
 # frame that holds all the records of the competitors
@@ -446,37 +477,32 @@ class CompetitorTable(Frame):
         self.parent = parent
         self.db = db
 
+        self.font = ['Arial', -0.017]
+        self.font[1] = round(self.font[1] * self.parent.parent.parent.SCREEN_HEIGHT)
+
         self.config(bg=LLBLUE)
 
         self.tablebg = 'white'
         self.tableborder = LLBLUE
 
-        scrollbar = Scrollbar(self)
-        self.idLB = Listbox(self, yscrollcommand=scrollbar.set, background=self.tablebg, highlightbackground=self.tableborder, borderwidth=0, width=6)
-        self.fnameLB = Listbox(self, yscrollcommand=scrollbar.set, background=self.tablebg, highlightbackground=self.tableborder, borderwidth=0, width=25)
-        self.lnameLB = Listbox(self, yscrollcommand=scrollbar.set, background=self.tablebg, highlightbackground=self.tableborder, borderwidth=0, width=25)
-        self.levelLB = Listbox(self, yscrollcommand=scrollbar.set, background=self.tablebg, highlightbackground=self.tableborder, borderwidth=0, width=12)
-        self.sexLB = Listbox(self, yscrollcommand=scrollbar.set, background=self.tablebg, highlightbackground=self.tableborder, borderwidth=0, width=2)
-        self.ageLB = Listbox(self, yscrollcommand=scrollbar.set, background=self.tablebg, highlightbackground=self.tableborder, borderwidth=0, width=3)
-        self.registerButton = Button(self, bg=BLUE, fg='white', text="REGISTER\nNEW",
+        self.scrollbar = Scrollbar(self)
+        self.idLB = Listbox(self, yscrollcommand=self.y_scroll, background=self.tablebg, highlightbackground=self.tableborder, borderwidth=0, width=5, font=self.font)
+        self.fnameLB = Listbox(self, yscrollcommand=self.y_scroll, background=self.tablebg, highlightbackground=self.tableborder, borderwidth=0, width=25, font=self.font)
+        self.lnameLB = Listbox(self, yscrollcommand=self.y_scroll, background=self.tablebg, highlightbackground=self.tableborder, borderwidth=0, width=25, font=self.font)
+        self.levelLB = Listbox(self, yscrollcommand=self.y_scroll, background=self.tablebg, highlightbackground=self.tableborder, borderwidth=0, width=12, font=self.font)
+        self.sexLB = Listbox(self, yscrollcommand=self.y_scroll, background=self.tablebg, highlightbackground=self.tableborder, borderwidth=0, width=2, font=self.font)
+        self.ageLB = Listbox(self, yscrollcommand=self.y_scroll, background=self.tablebg, highlightbackground=self.tableborder, borderwidth=0, width=3, font=self.font)
+        self.registerButton = Button(self, bg=BLUE, fg='white', text="REGISTER\n\nNEW", font=self.font, width=5, wraplength=1,
                                      borderwidth=1, command=self.register_new)
-        self.deleteButton = Button(self, bg=BLUE, fg='white', text="DELETE\nSELECTED",
+        self.deleteButton = Button(self, bg=BLUE, fg='white', text="DELETE\n\nSELECTED", font=self.font, width=5, wraplength=1,
                                    borderwidth=1, command=self.delete_competitor)
-        self.editButton = Button(self, bg=BLUE, fg='white', text="EDIT\nSELECTED",
+        self.editButton = Button(self, bg=BLUE, fg='white', text="EDIT\n\nSELECTED", font=self.font, width=5, wraplength=1,
                                  borderwidth=1, command=self.edit_competitor)
-        self.idLB.bind('<Delete>', self.delete_competitor)
-        self.fnameLB.bind('<Delete>', self.delete_competitor)
-        self.lnameLB.bind('<Delete>', self.delete_competitor)
-        self.levelLB.bind('<Delete>', self.delete_competitor)
-        self.sexLB.bind('<Delete>', self.delete_competitor)
-        self.ageLB.bind('<Delete>', self.delete_competitor)
 
-        self.idLB.bind('<Double-Button-1>', self.edit_competitor)
-        self.fnameLB.bind('<Double-Button-1>', self.edit_competitor)
-        self.lnameLB.bind('<Double-Button-1>', self.edit_competitor)
-        self.levelLB.bind('<Double-Button-1>', self.edit_competitor)
-        self.sexLB.bind('<Double-Button-1>', self.edit_competitor)
-        self.ageLB.bind('<Double-Button-1>', self.edit_competitor)
+        self.listboxes = (self.idLB, self.fnameLB, self.lnameLB, self.levelLB, self.sexLB, self.ageLB)
+        for lb in self.listboxes:
+            lb.bind('<Delete>', self.delete_competitor)
+            lb.bind('<Double-Button-1>', self.edit_competitor)
 
         self.idLB.bind('<FocusOut>', lambda e: self.idLB.selection_clear(0, 'end'))  # these binds ensure that when
         self.fnameLB.bind('<FocusOut>', lambda e: self.fnameLB.selection_clear(0, 'end'))  # leaving the table there
@@ -485,18 +511,27 @@ class CompetitorTable(Frame):
         self.sexLB.bind('<FocusOut>', lambda e: self.sexLB.selection_clear(0, 'end'))
         self.ageLB.bind('<FocusOut>', lambda e: self.ageLB.selection_clear(0, 'end'))
 
-        scrollbar.config(command=self.set_scrollables)
+        self.scrollbar.config(command=self.set_scrollables)
 
-        scrollbar.pack(side='right', fill='y', expand=True)
-        self.idLB.pack(side='left', fill='y', expand=True)
-        self.fnameLB.pack(side='left', fill='y', expand=True)
-        self.lnameLB.pack(side='left', fill='y', expand=True)
-        self.levelLB.pack(side='left', fill='y', expand=True)
-        self.sexLB.pack(side='left', fill='y', expand=True)
-        self.ageLB.pack(side='left', fill='y', expand=True)
-        self.editButton.pack(side='top', fill='x')
-        self.registerButton.pack(side='top', fill='x', pady=10)
-        self.deleteButton.pack(side='top', fill='x')
+        self.idLB.grid(row=0, column=0, sticky='nsew', rowspan=3)
+        self.fnameLB.grid(row=0, column=1, sticky='nsew', rowspan=3)
+        self.lnameLB.grid(row=0, column=2, sticky='nsew', rowspan=3)
+        self.levelLB.grid(row=0, column=3, sticky='nsew', rowspan=3)
+        self.sexLB.grid(row=0, column=4, sticky='nsew', rowspan=3)
+        self.ageLB.grid(row=0, column=5, sticky='nsew', rowspan=3)
+        self.editButton.grid(row=0, column=6, sticky='nsew')
+        self.registerButton.grid(row=1, column=6, sticky='nsew')
+        self.deleteButton.grid(row=2, column=6, sticky='nsew')
+        self.scrollbar.grid(row=0, column=7, sticky='nsew', rowspan=3)
+        self.rowconfigure(0, weight=1)
+        self.rowconfigure(1, weight=1)
+        self.rowconfigure(2, weight=1)
+        self.columnconfigure(0, weight=5)
+        self.columnconfigure(1, weight=25)
+        self.columnconfigure(2, weight=25)
+        self.columnconfigure(3, weight=12)
+        self.columnconfigure(4, weight=2)
+        self.columnconfigure(5, weight=3)
 
     def register_new(self):
         CompetitorRegistrationWindow(self, self.db)
@@ -543,6 +578,11 @@ class CompetitorTable(Frame):
         self.levelLB.yview(*args)
         self.sexLB.yview(*args)
         self.ageLB.yview(*args)
+        
+    def y_scroll(self, *args):  # keeps all listboxes at same scroll position always
+        for lb in self.listboxes:
+            lb.yview_moveto(args[0])
+        self.scrollbar.set(*args)
 
     def update_table(self, pattern=None):
         self.clear_table()
@@ -650,17 +690,26 @@ class QuickCommand(Frame):
         self.parent = parent
         self.db = db
 
+        self.font = ['Arial', -0.017]
+        self.font[1] = round(self.font[1] * self.parent.SCREEN_HEIGHT)
+
         self.config(highlightthickness=5, highlightbackground=LLBLUE, bg=LLBLUE)
 
-        self.commandEntryLabel = Label(self, text='Enter commands:', bg=LLBLUE)
-        self.commandEntry = Entry(self)
-        self.executeButton = Button(self, text='Execute', bg=LBLUE, command=lambda: self.execute(self.commandEntry.get()))
-        self.helpButton = Button(self, text='Usage Help...', bg=LBLUE, command=show_usage_help)
+        self.commandEntryLabel = Label(self, text='Enter commands:', bg=LLBLUE, font=self.font)
+        self.commandEntry = Entry(self, font=self.font)
+        self.executeButton = Button(self, text='Execute', bg=LBLUE, command=lambda: self.execute(self.commandEntry.get()), font=self.font)
+        self.helpButton = Button(self, text='Usage Help...', bg=LBLUE, command=show_usage_help, font=self.font)
 
-        self.commandEntryLabel.pack(side=LEFT)
-        self.commandEntry.pack(side=LEFT, expand=1, fill='x')
-        self.executeButton.pack(side=LEFT, padx=5)
-        self.helpButton.pack(side=LEFT)
+        self.commandEntryLabel.grid(row=0, column=0, sticky='nsew')
+        self.commandEntry.grid(row=0, column=1, sticky='nsew')
+        self.executeButton.grid(row=0, column=2, sticky='nsew')
+        self.helpButton.grid(row=0, column=3, sticky='nsew')
+
+        self.rowconfigure(0, weight=2)
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=20)
+        self.columnconfigure(2, weight=1)
+        self.columnconfigure(3, weight=2)
 
         self.commandEntry.bind('<Return>', lambda event: self.execute(self.commandEntry.get()))
 

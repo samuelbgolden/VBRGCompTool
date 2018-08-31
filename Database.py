@@ -40,7 +40,6 @@ class LocalDatabase:
         self.parent.update_all()
 
     def delete_all(self):
-        print('delete all LOCAL')
         self.c.execute('DELETE FROM competitors')
         self.parent.update_all()
 
@@ -99,10 +98,15 @@ class GlobalDatabase:
 
         self.cont = True  # flag for maintaining update loop
         self.updateFlag = True
-        self.delay = 6  # seconds between global database updates
+        self.delay = 3  # seconds between global database updates
         self.timer = threading.Timer(self.delay, self.update)  # creates a thread for the timer
         self.timer.start()  # starts timer in separate thread
         self.unsyncedRows = []
+
+        self.old = []  # this will be what was in the database on the last update call.
+        # on each call, I will compare the last update to this current, to determine if the application
+        # needs to be updated
+        self.new = []
 
         self.conn = None
 
@@ -136,8 +140,11 @@ class GlobalDatabase:
                         self.unsyncedRows.pop(0)
             except pymysql.Error:
                 pass
+            self.new = self.get_all()
+            if not self.old == self.new:
+                self.parent.update_all()
+                self.old = self.new
             self.updateFlag = False
-            self.parent.update_all()
         self.parent.parent.after(10, self.update_main)
 
     def connect(self):
@@ -148,7 +155,7 @@ class GlobalDatabase:
 
     def is_connected(self):
         try:
-            self.conn = pymysql.connect(self.address, self.user, self.password, self.database)
+            self.connect()
             c = self.conn.cursor()
             c.execute('SELECT VERSION()')
             result = c.fetchone()
@@ -178,6 +185,7 @@ class GlobalDatabase:
             self.unsyncedRows.append(('INSERT', row))
 
     def insert_rows(self, rows):
+        print(rows)
         try:
             self.connect()
             with self.conn.cursor() as c:
