@@ -19,6 +19,7 @@ class Application(Frame):
             self.databaseHandler = GlobalDatabase(self, user=user, password=password, address=address, database=database)
         else:
             self.databaseHandler = LocalDatabase(self)
+
         self.ioHandler = IOHandler(self, self.databaseHandler)  # object that handles csv stuff
 
         self.menubar = MenuBar(self, self.databaseHandler, self.ioHandler)  # declares 'File...' bar

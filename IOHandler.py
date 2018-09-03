@@ -2,6 +2,7 @@ from tkinter.filedialog import *
 from tkinter.messagebox import askyesnocancel
 import csv
 import os
+from Database import GlobalDatabase
 
 
 # handles all the stuff in the 'File' menu at the top left; i.e. saving, closing, opening, exporting files
@@ -44,11 +45,14 @@ class IOHandler:
                                         filetypes=(("CSV File", "*.csv"), ("all files", "*.*")))
         with open(self.filename, 'r', newline='') as file:
             reader = csv.reader(file)
-            rows = []
-            for row in reader:
-                rows.append(row[1:])
-            self.db.delete_all()
-            self.db.insert_rows(rows)
+            if isinstance(self.parent.databaseHandler, GlobalDatabase):
+                rows = []
+                for row in reader:
+                    rows.append(row[1:])
+                self.db.delete_all()
+                self.db.insert_rows(rows)
+            else:
+                self.db.insert_rows(reader)
         self.parent.parent.title('Working in competition at ' + os.path.splitext(self.filename)[0])
 
     def write_all(self):
