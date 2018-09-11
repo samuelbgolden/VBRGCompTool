@@ -51,7 +51,7 @@ class EntryTab(Frame):
         self.competitorInfoFrame = CompetitorInfoFrame(self, self.db, bg=LBLUE)  # creates frame for individual info
 
         self.competitorInfoFrame.grid(row=0, column=0, sticky='nsew')
-        self.routeAttemptsEntryFrame.grid(row=1, column=0, sticky='nsew')
+        self.routeAttemptsEntryFrame.grid(row=1, column=0, sticky='nsew', pady=10)
         self.rowconfigure(0, weight=1)
         self.rowconfigure(1, weight=2)
         self.columnconfigure(0, weight=1)
@@ -75,16 +75,17 @@ class RouteAttemptsEntryFrame(Frame):
         self.parent = parent
         self.db = db
 
-        self.routes = [RouteAttemptsEntry(self, x, bg=LBLUE) for x in range(1, 51)]  # creates sets of buttons for route
+        self.columns = 10
+
+        self.routes = [RouteAttemptsEntry(self, x, bg=LBLUE, padx=10) for x in range(1, 51)]  # creates sets of buttons for route
                                                                                      # attempts and completion entry
         for i, route in enumerate(self.routes):  # iterating through routes created above
-            if i < 25:                             # this if else creates the two columns of RouteAttemptsEntry
-                route.grid(row=i % 25, column=0, stick='nsew')   # objects by sorting by id (less than 25 and greater or equal to 25),
-            else:                                  # and griding them on different columns according to those
-                route.grid(row=i % 25, column=2, stick='nsew')   # categories
-        Frame(self, width=2, bg=DDBLUE).grid(row=0, rowspan=25, column=1, stick='nsew', padx=10)  # vertical rule
-        for i in range(0, 25):
-            self.rowconfigure(i, weight=1)  # sets expand weight for all Grid rows
+            route.grid(row=i % self.columns, column=i // self.columns, stick='nsew')   # objects by sorting by id (less than 25 and greater or equal to 25),
+        #Frame(self, width=2, bg=DDBLUE).grid(row=0, rowspan=25, column=1, stick='nsew', padx=10)  # vertical rule
+        for i in range(0, self.columns):
+            self.rowconfigure(i, weight=1)  # sets expand weight for all grid rows
+        for i in range(0, (50 // self.columns)):
+            self.columnconfigure(i, weight=1)  # sets expand weight for all grid columns
 
     def get_selected_routes(self):
         selected = []
@@ -123,6 +124,15 @@ class CompetitorInfoFrame(Frame):
         self.parent = parent
         self.db = db
 
+        self.titleFont = ['Arial', -0.03, 'bold']
+        self.infoFont = ['Arial', -0.02, 'bold']
+        self.routesAndAttemptsFont = ['Din', -0.05, 'bold']
+        self.routesAndAttemptsSeparatorFont = ['Din', -0.03]
+        self.titleFont[1] = round(self.titleFont[1] * self.parent.parent.SCREEN_HEIGHT)
+        self.infoFont[1] = round(self.infoFont[1] * self.parent.parent.SCREEN_HEIGHT)
+        self.routesAndAttemptsFont[1] = round(self.routesAndAttemptsFont[1] * self.parent.parent.SCREEN_HEIGHT)
+        self.routesAndAttemptsSeparatorFont[1] = round(self.routesAndAttemptsSeparatorFont[1] * self.parent.parent.SCREEN_HEIGHT)
+
         self.labelbg = LBLUE
         self.labelfg = 'white'
         self.entrybg = LLBLUE
@@ -132,59 +142,83 @@ class CompetitorInfoFrame(Frame):
         self.sexValue = StringVar()
         self.idValue = IntVar()
         self.levelValues = ('Beginner', 'Intermediate', 'Advanced', 'Open')
-        self.routeValues = [StringVar()]
 
         self.routeListingFrame = Frame(self, bg=self.labelbg)
+        self.ageAndSexFrame = Frame(self, bg=self.labelbg)
 
-        self.idValueLabel = Label(self, textvariable=self.idValue, bg=self.labelbg, fg=self.labelfg)
-        self.idLabel = Label(self, text='ID: ', bg=self.labelbg, fg=self.labelfg)
-        self.frameTitleLabel = Label(self, text="COMPETITOR INFO", bg=self.labelbg, fg=self.labelfg)
-        self.fnameLabel = Label(self, text='FIRST:', bg=self.labelbg, fg=self.labelfg)
-        self.lnameLabel = Label(self, text='LAST:', bg=self.labelbg, fg=self.labelfg)
-        self.levelLabel = Label(self, text='LEVEL:', bg=self.labelbg, fg=self.labelfg)
-        self.sexLabel = Label(self, text='SEX:', bg=self.labelbg, fg=self.labelfg)
-        self.ageLabel = Label(self, text='AGE:', bg=self.labelbg, fg=self.labelfg)
-        self.routesLabel = Label(self.routeListingFrame, text='ROUTES:', bg=self.labelbg, fg=self.labelfg)
-        self.attemptsLabel = Label(self.routeListingFrame, text='ATTEMPTS:', bg=self.labelbg, fg=self.labelfg)
+        self.idValueLabel = Label(self, textvariable=self.idValue, bg=self.labelbg, fg=self.labelfg, font=self.infoFont, anchor='w', bd=1, relief='sunken')
+        self.idLabel = Label(self, text='ID: ', bg=self.labelbg, fg=self.labelfg, font=self.infoFont, anchor='w')
+        self.frameTitleLabel = Label(self, text="COMPETITOR INFO", bg=self.labelbg, fg=self.labelfg, font=self.titleFont)
+        self.fnameLabel = Label(self, text='FIRST:', bg=self.labelbg, fg=self.labelfg, font=self.infoFont, anchor='w')
+        self.lnameLabel = Label(self, text='LAST:', bg=self.labelbg, fg=self.labelfg, font=self.infoFont, anchor='w')
+        self.levelLabel = Label(self, text='LEVEL:', bg=self.labelbg, fg=self.labelfg, font=self.infoFont, anchor='w')
+        self.sexLabel = Label(self.ageAndSexFrame, text='SEX:', bg=self.labelbg, fg=self.labelfg, font=self.infoFont, anchor='w')
+        self.ageLabel = Label(self.ageAndSexFrame, text='AGE:', bg=self.labelbg, fg=self.labelfg, font=self.infoFont, anchor='w')
+        self.routesLabel = Label(self.routeListingFrame, text='ROUTES:', bg=self.labelbg, fg=self.labelfg, font=self.infoFont, anchor='w')
+        self.attemptsLabel = Label(self.routeListingFrame, text='ATTEMPTS:', bg=self.labelbg, fg=self.labelfg, font=self.infoFont, anchor='w')
 
-        self.fnameEntry = Entry(self, width=30, fg=self.entryfg, bg=self.entrybg, disabledbackground=self.entrydisabledbg)
-        self.lnameEntry = Entry(self, width=30, fg=self.entryfg, bg=self.entrybg, disabledbackground=self.entrydisabledbg)
-        self.levelEntry = Spinbox(self, values=self.levelValues, width=28, fg=self.entryfg, bg=self.entrybg, disabledbackground=self.entrydisabledbg)
-        self.sexEntryM = Radiobutton(self, text='M', variable=self.sexValue, value='M', fg=self.entryfg, bg=self.labelbg)
-        self.sexEntryF = Radiobutton(self, text='F', variable=self.sexValue, value='F', fg=self.entryfg, bg=self.labelbg)
-        self.ageEntry = Spinbox(self, from_=1, to=100, width=10, fg=self.entryfg, bg=self.entrybg, disabledbackground=self.entrydisabledbg)
-        self.routeEntries = [Entry(self.routeListingFrame, width=3, fg=self.entryfg, bg=self.entrybg, disabledbackground=self.entrydisabledbg) for _ in range(5)]
-        self.attemptEntries = [Entry(self.routeListingFrame, width=3, fg=self.entryfg, bg=self.entrybg, disabledbackground=self.entrydisabledbg) for _ in range(5)]
+        self.fnameEntry = Entry(self, width=30, fg=self.entryfg, bg=self.entrybg, disabledbackground=self.entrydisabledbg, font=self.infoFont)
+        self.lnameEntry = Entry(self, width=30, fg=self.entryfg, bg=self.entrybg, disabledbackground=self.entrydisabledbg, font=self.infoFont)
+        self.levelEntry = Spinbox(self, values=self.levelValues, width=28, fg=self.entryfg, bg=self.entrybg, disabledbackground=self.entrydisabledbg, font=self.infoFont)
+        self.sexEntryM = Radiobutton(self.ageAndSexFrame, text='M', variable=self.sexValue, value='M', fg=self.entryfg, bg=self.labelbg, font=self.infoFont)
+        self.sexEntryF = Radiobutton(self.ageAndSexFrame, text='F', variable=self.sexValue, value='F', fg=self.entryfg, bg=self.labelbg, font=self.infoFont)
+        self.ageEntry = Spinbox(self.ageAndSexFrame, from_=1, to=100, width=10, fg=self.entryfg, bg=self.entrybg, disabledbackground=self.entrydisabledbg, font=self.infoFont)
+        self.routeEntries = [Entry(self.routeListingFrame, width=3, fg=self.entryfg, bg=self.entrybg, disabledbackground=self.entrydisabledbg, font=self.routesAndAttemptsFont) for _ in range(5)]
+        self.attemptEntries = [Entry(self.routeListingFrame, width=3, fg=self.entryfg, bg=self.entrybg, disabledbackground=self.entrydisabledbg, font=self.routesAndAttemptsFont) for _ in range(5)]
 
-        self.updateButton = Button(self, text='Update Competitor', command=self.update_competitor, bg=DBLUE, fg='white')
+        self.updateButton = Button(self, text='Update Competitor', command=self.update_competitor, bg=DBLUE, fg='white', font=self.infoFont)
 
-        self.frameTitleLabel.grid(stick='ew', row=0, column=0, columnspan=6)
-        self.idLabel.grid(stick='nw', row=1, column=0)
-        self.idValueLabel.grid(stick='nw', row=1, column=1)
-        self.fnameLabel.grid(stick='nw', row=2, column=0)
-        self.fnameEntry.grid(stick='nw', row=2, column=1, columnspan=5)
-        self.lnameLabel.grid(stick='nw', row=3, column=0)
-        self.lnameEntry.grid(stick='nw', row=3, column=1, columnspan=5)
-        self.levelLabel.grid(stick='nw', row=4, column=0)
-        self.levelEntry.grid(stick='nw', row=4, column=1, columnspan=5)
-        self.sexLabel.grid(stick='nw', row=5, column=0)
-        self.sexEntryM.grid(stick='nw', row=5, column=1)
-        self.sexEntryF.grid(stick='nw', row=5, column=2)
-        Frame(self, height=20, width=2, bg='grey').grid(stick='nw', row=5, column=3)
-        self.ageLabel.grid(stick='nw', row=5, column=4)
-        self.ageEntry.grid(stick='nw', row=5, column=5)
-        self.routeListingFrame.grid(stick='nw', row=7, column=0, columnspan=6)
-        self.routesLabel.grid(stick='nsw', row=0, column=0)
+        self.frameTitleLabel.grid(sticky='nsew', row=0, column=0, columnspan=2)
+        self.idLabel.grid(sticky='nsew', row=1, column=0, padx=10)
+        self.idValueLabel.grid(sticky='nsew', row=1, column=1, padx=10)
+        self.fnameLabel.grid(sticky='nsew', row=2, column=0, padx=10)
+        self.fnameEntry.grid(sticky='nsew', row=2, column=1, padx=10)
+        self.lnameLabel.grid(sticky='nsew', row=3, column=0, padx=10)
+        self.lnameEntry.grid(sticky='nsew', row=3, column=1, padx=10)
+        self.levelLabel.grid(sticky='nsew', row=4, column=0, padx=10)
+        self.levelEntry.grid(sticky='nsew', row=4, column=1, padx=10)
+
+        self.ageAndSexFrame.grid(sticky='nsew', row=5, column=1)
+        self.sexLabel.grid(sticky='nsew', row=0, column=0)
+        self.sexEntryM.grid(sticky='nsew', row=0, column=1)
+        self.sexEntryF.grid(sticky='nsew', row=0, column=2)
+        self.ageLabel.grid(sticky='nsew', row=0, column=3)
+        self.ageEntry.grid(sticky='nsew', row=0, column=4, padx=10)
+
+        self.routeListingFrame.grid(sticky='nsew', row=6, column=0, columnspan=2, padx=10)
+        self.routesLabel.grid(sticky='nsew', row=0, column=0)
         for i, entry in enumerate(self.routeEntries):
-            Label(self.routeListingFrame, text=i+1, fg='white', bg=DDBLUE)\
-                .grid(column=2*i+1, row=0, rowspan=2, stick='ns')
-            entry.grid(stick='nw', row=0, column=2*i+2)
+            lb = Label(self.routeListingFrame, text=i+1, fg='white', bg=DDBLUE, font=self.routesAndAttemptsSeparatorFont)
+            lb.grid(column=2*i+1, row=0, rowspan=2, sticky='nsew')
+            entry.grid(sticky='nsew', row=0, column=2*i+2)
             entry.bind('<FocusOut>', self.update_to_route_buttons)
-        self.attemptsLabel.grid(stick='nsw', row=1, column=0)
+            self.routeListingFrame.columnconfigure(2*i+1, weight=1)
+            self.routeListingFrame.columnconfigure(2*i+2, weight=3)
+        self.attemptsLabel.grid(sticky='nsew', row=1, column=0)
         for i, entry in enumerate(self.attemptEntries):
-            entry.grid(stick='nw', row=1, column=2*i+2)
+            entry.grid(sticky='nsew', row=1, column=2*i+2)
             entry.bind('<FocusOut>', self.update_to_route_buttons)
-        self.updateButton.grid(row=8, column=0, columnspan=6)
+
+        self.updateButton.grid(row=7, column=0, columnspan=2, sticky='nsew', pady=10, padx=10)
+
+        self.rowconfigure(0, weight=2)  # title
+        self.rowconfigure(1, weight=1)  # id entry
+        self.rowconfigure(2, weight=1)  # fname entry
+        self.rowconfigure(3, weight=1)  # lname entry
+        self.rowconfigure(4, weight=1)  # level entry
+        self.rowconfigure(5, weight=1)  # age and sex entry
+        self.rowconfigure(6, weight=3)  # route and attempt entry frame
+        self.rowconfigure(7, weight=1)  # update button
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=4)
+
+        self.routeListingFrame.rowconfigure(0, weight=1)
+        self.routeListingFrame.rowconfigure(1, weight=1)
+        self.routeListingFrame.columnconfigure(0, weight=4)
+
+        for i in range(0, 5):
+            self.ageAndSexFrame.columnconfigure(i, weight=1)
+        self.ageAndSexFrame.rowconfigure(0, weight=1)
 
         taborder = []
         for i in range(0, 5):
@@ -193,15 +227,6 @@ class CompetitorInfoFrame(Frame):
 
         for widget in taborder:
             widget.lift()
-
-        for i in range(0, Grid.grid_size(self)[0]):
-            Grid.grid_rowconfigure(self, i, weight=1)
-        for i in (0, Grid.grid_size(self)[0]):
-            Grid.grid_columnconfigure(self, i, weight=1)
-        for i in (0, Grid.grid_size(self.routeListingFrame)[0]):
-            Grid.grid_rowconfigure(self.routeListingFrame, i, weight=1)
-        for i in (0, Grid.grid_size(self.routeListingFrame)[0]):
-            Grid.grid_columnconfigure(self.routeListingFrame, i, weight=1)
 
         disable_frame(self.parent)
 
@@ -309,7 +334,7 @@ class CompetitorInfoFrame(Frame):
 
 
 # frame containing the CategoricalStandings objects
-# child of Application
+# child of CompetitorTab
 class StandingsTab(Frame):
     def __init__(self, parent, db, *args, **kwargs):
         Frame.__init__(self, parent, *args, **kwargs)
@@ -339,9 +364,9 @@ class StandingsTab(Frame):
                 standings.append(CategoricalStandings(self, self.db, borderwidth=3, background='gray', level=l, sex=g))
         return standings
 
-    def update_all(self):
+    def update_all(self, pattern=None):
         for standing in self.standings:
-            standing.update_table()
+            standing.update_table(pattern)
 
 
 # frame containing a single list of competitors by score for a specified set of attributes
@@ -355,8 +380,8 @@ class CategoricalStandings(Frame):
         self.titleFont = ['Arial', -0.016]
         self.font = ['Arial', -0.014]
 
-        self.titleFont[1] = round(self.titleFont[1] * self.parent.parent.SCREEN_HEIGHT)
-        self.font[1] = round(self.font[1] * self.parent.parent.SCREEN_HEIGHT)
+        self.titleFont[1] = round(self.titleFont[1] * self.parent.parent.parent.parent.SCREEN_HEIGHT)
+        self.font[1] = round(self.font[1] * self.parent.parent.parent.parent.SCREEN_HEIGHT)
 
         self.titlebg = LBLUE
         self.titlefg = 'black'
@@ -375,6 +400,9 @@ class CategoricalStandings(Frame):
         self.scoreLB = Listbox(self, yscrollcommand=self.y_scroll, borderwidth=0, width=10, activestyle='none', font=self.font)
 
         self.listboxes = (self.idLB, self.fnameLB, self.lnameLB, self.scoreLB)
+        for lb in self.listboxes:
+            lb.bind('<Delete>', self.delete_competitor)
+            lb.bind('<Double-Button-1>', self.edit_competitor)
 
         self.title.grid(row=0, column=0, columnspan=5, sticky='nsew')
         self.idLB.grid(row=1, column=0, sticky='nsew')
@@ -403,9 +431,12 @@ class CategoricalStandings(Frame):
             lb.yview_moveto(args[0])
         self.scrollbar.set(*args)
 
-    def update_table(self):
+    def update_table(self, pattern=None):
         self.clear_table()
-        rows = self.db.get_specific_rows_by_score(**self.selectedAttributes)
+        if pattern and not pattern == 'Search competitors...':
+            rows = self.db.get_specific_rows_by_score(pattern=pattern, **self.selectedAttributes)
+        else:
+            rows = self.db.get_specific_rows_by_score(**self.selectedAttributes)
         if rows:
             self.titleString.set('{} | {} ({})'.format(self.selectedAttributes['level'],
                                                        self.selectedAttributes['sex'],
@@ -419,6 +450,41 @@ class CategoricalStandings(Frame):
             self.titleString.set('{} | {} ({})'.format(self.selectedAttributes['level'],
                                                        self.selectedAttributes['sex'],
                                                        0))
+
+    def get_selected_competitor(self):
+        if len(self.idLB.curselection()) > 0:
+            row = self.idLB.curselection()
+        elif len(self.fnameLB.curselection()) > 0:
+            row = self.fnameLB.curselection()
+        elif len(self.lnameLB.curselection()) > 0:
+            row = self.lnameLB.curselection()
+        elif len(self.scoreLB.curselection()) > 0:
+            row = self.scoreLB.curselection()  # this block searches for any selection in all the list boxes
+
+        return row
+
+    def edit_competitor(self, *args):
+        try:
+            id = self.get_selected_competitor()
+        except UnboundLocalError:  # occurs when there is no competitor selected
+            print('cannot edit a competitor when there is none selected')
+            return
+
+        if id:
+            entrytab = self.parent.parent.parent.parent.entryTab
+
+            entrytab.routeAttemptsEntryFrame.reset()
+            enable_frame(entrytab.competitorInfoFrame)
+            enable_frame(entrytab.routeAttemptsEntryFrame)
+            entrytab.competitorInfoFrame.fill_competitor(self.idLB.get(id))  # fills info to entry
+
+    def delete_competitor(self, *args):
+        try:
+            competitor_id = self.idLB.get(self.get_selected_competitor())
+        except UnboundLocalError:  # occurs when there is no competitor selected
+            print('cannot delete a competitor when there is none selected')
+            return
+        self.db.delete_row(competitor_id)
 
     def clear_table(self):
         self.idLB.delete(0, 'end')
@@ -438,6 +504,8 @@ class CompetitorTab(Frame):
         self.parent = parent
         self.db = db
 
+        self.showingStandings = False
+
         self.competitorFrame = CompetitorFrame(self, self.db)
         self.competitorSelectionFrame = CompetitorSelectionFrame(self, self.db)
 
@@ -445,6 +513,17 @@ class CompetitorTab(Frame):
         self.competitorFrame.grid(row=0, column=1, sticky='nsew')
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=6)
+        self.rowconfigure(0, weight=1)
+
+    def switch_tabs(self, *args):
+        if self.showingStandings:
+            self.competitorFrame.standingsTab.grid_remove()
+            self.competitorFrame.competitorTable.grid()
+            self.showingStandings = False
+            return
+        self.competitorFrame.competitorTable.grid_remove()
+        self.competitorFrame.standingsTab.grid()
+        self.showingStandings = True
 
 
 # frame containing the search bar and table of competitors
@@ -457,12 +536,16 @@ class CompetitorFrame(Frame):
 
         self.competitorSearchBar = CompetitorSearchBox(self)
         self.competitorTable = CompetitorTable(self, self.db, background=DBLUE)
+        self.standingsTab = StandingsTab(self, self.db)
         self.clearSearchButton = Button(self, text='CLEAR', background=BLUE, foreground='white',
                                         font=self.competitorSearchBar.font, command=self.competitorSearchBar.clear)
 
         self.competitorSearchBar.grid(row=0, column=0, sticky='nsew')
         self.clearSearchButton.grid(row=0, column=1, sticky='nsew')
         self.competitorTable.grid(row=1, column=0, sticky='nsew', columnspan=2)
+        self.standingsTab.grid(row=1, column=0, sticky='nsew', columnspan=2)
+        self.standingsTab.grid_remove()
+
         self.rowconfigure(0, weight=1)
         self.rowconfigure(1, weight=30)
         self.columnconfigure(1, weight=1)
@@ -477,27 +560,37 @@ class CompetitorTable(Frame):
         self.parent = parent
         self.db = db
 
+        self.labelfont = ['Arial', -0.017, 'bold']
         self.font = ['Arial', -0.017]
+        self.labelfont[1] = round(self.font[1] * self.parent.parent.parent.SCREEN_HEIGHT)
         self.font[1] = round(self.font[1] * self.parent.parent.parent.SCREEN_HEIGHT)
 
         self.config(bg=LLBLUE)
 
         self.tablebg = 'white'
         self.tableborder = LLBLUE
+        self.labelfg = 'white'
+        self.labelbg = LBLUE
 
         self.scrollbar = Scrollbar(self)
+        self.idLabel = Label(self, text='ID', fg=self.labelfg, bg=self.labelbg, font=self.labelfont, height=1, anchor='sw', highlightbackground=self.labelfg)
+        self.fnameLabel = Label(self, text='First Name', fg=self.labelfg, bg=self.labelbg, font=self.labelfont, height=1, anchor='sw')
+        self.lnameLabel = Label(self, text='Last Name', fg=self.labelfg, bg=self.labelbg, font=self.labelfont, height=1, anchor='sw')
+        self.levelLabel = Label(self, text='Level', fg=self.labelfg, bg=self.labelbg, font=self.labelfont, height=1, anchor='sw')
+        self.sexLabel = Label(self, text='Sex', fg=self.labelfg, bg=self.labelbg, font=self.labelfont, height=1, anchor='sw')
+        self.ageLabel = Label(self, text='Age', fg=self.labelfg, bg=self.labelbg, font=self.labelfont, height=1, anchor='sw')
         self.idLB = Listbox(self, yscrollcommand=self.y_scroll, background=self.tablebg, highlightbackground=self.tableborder, borderwidth=0, width=5, font=self.font)
         self.fnameLB = Listbox(self, yscrollcommand=self.y_scroll, background=self.tablebg, highlightbackground=self.tableborder, borderwidth=0, width=25, font=self.font)
         self.lnameLB = Listbox(self, yscrollcommand=self.y_scroll, background=self.tablebg, highlightbackground=self.tableborder, borderwidth=0, width=25, font=self.font)
         self.levelLB = Listbox(self, yscrollcommand=self.y_scroll, background=self.tablebg, highlightbackground=self.tableborder, borderwidth=0, width=12, font=self.font)
         self.sexLB = Listbox(self, yscrollcommand=self.y_scroll, background=self.tablebg, highlightbackground=self.tableborder, borderwidth=0, width=2, font=self.font)
         self.ageLB = Listbox(self, yscrollcommand=self.y_scroll, background=self.tablebg, highlightbackground=self.tableborder, borderwidth=0, width=3, font=self.font)
-        self.registerButton = Button(self, bg=BLUE, fg='white', text="REGISTER\n\nNEW", font=self.font, width=5, wraplength=1,
-                                     borderwidth=1, command=self.register_new)
-        self.deleteButton = Button(self, bg=BLUE, fg='white', text="DELETE\n\nSELECTED", font=self.font, width=5, wraplength=1,
-                                   borderwidth=1, command=self.delete_competitor)
-        self.editButton = Button(self, bg=BLUE, fg='white', text="EDIT\n\nSELECTED", font=self.font, width=5, wraplength=1,
-                                 borderwidth=1, command=self.edit_competitor)
+        #self.registerButton = Button(self, bg=BLUE, fg='white', text="REGISTER\n\nNEW", font=self.font, width=5, wraplength=1,
+        #                             borderwidth=1, command=self.register_new)
+        #self.deleteButton = Button(self, bg=BLUE, fg='white', text="DELETE\n\nSELECTED", font=self.font, width=5, wraplength=1,
+        #                           borderwidth=1, command=self.delete_competitor)
+        #self.editButton = Button(self, bg=BLUE, fg='white', text="EDIT\n\nSELECTED", font=self.font, width=5, wraplength=1,
+        #                         borderwidth=1, command=self.edit_competitor)
 
         self.listboxes = (self.idLB, self.fnameLB, self.lnameLB, self.levelLB, self.sexLB, self.ageLB)
         for lb in self.listboxes:
@@ -513,19 +606,24 @@ class CompetitorTable(Frame):
 
         self.scrollbar.config(command=self.set_scrollables)
 
-        self.idLB.grid(row=0, column=0, sticky='nsew', rowspan=3)
-        self.fnameLB.grid(row=0, column=1, sticky='nsew', rowspan=3)
-        self.lnameLB.grid(row=0, column=2, sticky='nsew', rowspan=3)
-        self.levelLB.grid(row=0, column=3, sticky='nsew', rowspan=3)
-        self.sexLB.grid(row=0, column=4, sticky='nsew', rowspan=3)
-        self.ageLB.grid(row=0, column=5, sticky='nsew', rowspan=3)
-        self.editButton.grid(row=0, column=6, sticky='nsew')
-        self.registerButton.grid(row=1, column=6, sticky='nsew')
-        self.deleteButton.grid(row=2, column=6, sticky='nsew')
-        self.scrollbar.grid(row=0, column=7, sticky='nsew', rowspan=3)
+        self.idLabel.grid(row=0, column=0, sticky='nsew')
+        self.fnameLabel.grid(row=0, column=1, sticky='nsew')
+        self.lnameLabel.grid(row=0, column=2, sticky='nsew')
+        self.levelLabel.grid(row=0, column=3, sticky='nsew')
+        self.sexLabel.grid(row=0, column=4, sticky='nsew')
+        self.ageLabel.grid(row=0, column=5, sticky='nsew')
+        self.idLB.grid(row=1, column=0, sticky='nsew')
+        self.fnameLB.grid(row=1, column=1, sticky='nsew')
+        self.lnameLB.grid(row=1, column=2, sticky='nsew')
+        self.levelLB.grid(row=1, column=3, sticky='nsew')
+        self.sexLB.grid(row=1, column=4, sticky='nsew')
+        self.ageLB.grid(row=1, column=5, sticky='nsew')
+        #self.editButton.grid(row=0, column=6, sticky='nsew')
+        #self.registerButton.grid(row=1, column=6, sticky='nsew')
+        #self.deleteButton.grid(row=2, column=6, sticky='nsew')
+        self.scrollbar.grid(row=0, column=7, sticky='nsew', rowspan=2)
         self.rowconfigure(0, weight=1)
-        self.rowconfigure(1, weight=1)
-        self.rowconfigure(2, weight=1)
+        self.rowconfigure(1, weight=100)
         self.columnconfigure(0, weight=5)
         self.columnconfigure(1, weight=25)
         self.columnconfigure(2, weight=25)
@@ -533,8 +631,18 @@ class CompetitorTable(Frame):
         self.columnconfigure(4, weight=2)
         self.columnconfigure(5, weight=3)
 
-    def register_new(self):
-        CompetitorRegistrationWindow(self, self.db)
+        self.competitorRegistrationWindow = None
+
+    def register_new(self, *args):
+        if not self.competitorRegistrationWindow:
+            self.competitorRegistrationWindow = CompetitorRegistrationWindow(self, self.db)
+            self.competitorRegistrationWindow.protocol('WM_DELETE_WINDOW', self.close_competitor_registration_window)
+        else:
+            print('competitor registration window already open')
+
+    def close_competitor_registration_window(self):
+        self.competitorRegistrationWindow.destroy()
+        self.competitorRegistrationWindow = None
 
     def get_selected_competitor(self):
         if len(self.idLB.curselection()) > 0:
@@ -561,7 +669,11 @@ class CompetitorTable(Frame):
         self.db.delete_row(competitor_id)
 
     def edit_competitor(self, *args):
-        id = self.get_selected_competitor()
+        try:
+            id = self.get_selected_competitor()
+        except UnboundLocalError:  # occurs when there is no competitor selected
+            print('cannot edit a competitor when there is none selected')
+            return
 
         if id:
             entrytab = self.parent.parent.parent.entryTab

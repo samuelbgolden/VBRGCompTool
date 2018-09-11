@@ -45,11 +45,11 @@ class IOHandler:
                                         filetypes=(("CSV File", "*.csv"), ("all files", "*.*")))
         with open(self.filename, 'r', newline='') as file:
             reader = csv.reader(file)
+            self.db.delete_all()
             if isinstance(self.parent.databaseHandler, GlobalDatabase):
                 rows = []
                 for row in reader:
                     rows.append(row[1:])
-                self.db.delete_all()
                 self.db.insert_rows(rows)
             else:
                 self.db.insert_rows(reader)

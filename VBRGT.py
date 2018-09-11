@@ -23,7 +23,7 @@ class Application(Frame):
         self.ioHandler = IOHandler(self, self.databaseHandler)  # object that handles csv stuff
 
         self.menubar = MenuBar(self, self.databaseHandler, self.ioHandler)  # declares 'File...' bar
-        self.standingsTab = StandingsTab(self, self.databaseHandler, bg='red')  # right most tab containing competitor rankings
+        #self.standingsTab = StandingsTab(self, self.databaseHandler, bg='red')  # right most tab containing competitor rankings
         self.entryTab = EntryTab(self, self.databaseHandler)  # center tab containing all info about one competitor
         self.competitorTab = CompetitorTab(self, self.databaseHandler)  # left most tab containing list of all competitors
         self.quickCommand = QuickCommand(self, self.databaseHandler)  # bottom bar that allows text based usage
@@ -31,19 +31,18 @@ class Application(Frame):
 
         self.competitorTab.grid(row=0, column=0, sticky='nsew')
         self.entryTab.grid(row=0, column=1, sticky='nsew')
-        self.standingsTab.grid(row=0, column=2, sticky='nsew')
-        self.quickCommand.grid(row=1, column=0, columnspan=3, sticky='nsew')
+        #self.standingsTab.grid(row=0, column=2, sticky='nsew')
+        self.quickCommand.grid(row=1, column=0, columnspan=2, sticky='nsew')
         self.rowconfigure(0, weight=15)
         self.rowconfigure(1, weight=1)
-        self.columnconfigure(0, weight=3)
-        self.columnconfigure(1, weight=2)
-        self.columnconfigure(2, weight=1)
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
 
         self.parent.protocol('WM_DELETE_WINDOW', self.ioHandler.close)  # handles clicking 'X' button with .close func
 
     def update_all(self):  # app method where things that need to be updated whenever some data manip occurs
-        self.standingsTab.update_all()  # updates every standings table
         compframe = self.competitorTab.competitorFrame
+        compframe.standingsTab.update_all(compframe.competitorSearchBar.content.get())  # updates every standings table
         compframe.competitorTable.update_table(compframe.competitorSearchBar.content.get())  # updates competitor list
 
 
@@ -157,11 +156,15 @@ class SessionPrompt(Frame):
     def change_root_settings(self, app):
         self.grid_remove()
         self.parent.resizable(True, True)
-        app.grid(column=0, row=0, sticky='nsew')
+        app.pack(fill='both', expand=True)
+        self.parent.bind('<Control-r>', app.competitorTab.competitorFrame.competitorTable.register_new)
+        self.parent.bind('<Control-q>', app.competitorTab.switch_tabs)
+        self.parent.bind('<Control-s>', app.ioHandler.save)
 
 
 if __name__ == '__main__':  # checks if full code is being run, rather than being imported as a module
     root = Tk()  # base tkinter object
+
     options = SessionPrompt(root)
     options.grid(row=0, column=0, sticky='nsew')
 #    app = Application(root)

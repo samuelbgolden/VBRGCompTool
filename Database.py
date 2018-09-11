@@ -51,7 +51,7 @@ class LocalDatabase:
         self.c.execute('''SELECT * FROM competitors WHERE id = ?''', (id,))
         return self.c.fetchone()
 
-    def get_specific_rows_by_score(self, **kwargs):  # orders by score by default
+    def get_specific_rows_by_score(self, pattern=None, **kwargs):  # orders by score by default
         execstring = 'SELECT id, fname, lname, score FROM competitors'
         areattributes = False
 
@@ -60,11 +60,14 @@ class LocalDatabase:
                 execstring += ' WHERE'
                 areattributes = True
             if k in ('id', 'age', 'score', 'r1', 'r2', 'r3', 'r4', 'r5', 'a1', 'a2', 'a3', 'a4', 'a5'):
-                execstring += ' {} = {} AND'.format(k, kwargs[k])
+                execstring += " {} = {} AND".format(k, kwargs[k])
             elif k in ('fname', 'lname', 'level', 'sex'):
-                execstring += ' {} = \'{}\' AND'.format(k, kwargs[k])
+                execstring += " {} = '{}' AND".format(k, kwargs[k])
         if areattributes:
-            execstring = execstring[:-4] + ' ORDER BY score DESC'
+            execstring = execstring[:-4]  # cuts off leading ' AND'
+        if pattern:
+            execstring += (" AND (fname LIKE '{}' OR lname LIKE '{}' OR level LIKE '{}' OR id LIKE '{}')".format(pattern+'%', pattern+'%', pattern+'%', pattern+'%'))
+        execstring += ' ORDER BY score DESC'
 
         self.c.execute(execstring)
         return self.c.fetchall()
@@ -229,7 +232,7 @@ class GlobalDatabase:
             record = c.fetchone()
         return record
 
-    def get_specific_rows_by_score(self, **kwargs):  # orders by score by default
+    def get_specific_rows_by_score(self, pattern=None, **kwargs):  # orders by score by default
         self.connect()
 
         execstring = 'SELECT `id`, `fname`, `lname`, `score` FROM `competitors`'
@@ -244,7 +247,10 @@ class GlobalDatabase:
             elif k in ('fname', 'lname', 'level', 'sex'):
                 execstring += ' {} = \'{}\' AND'.format(k, kwargs[k])
         if areattributes:
-            execstring = execstring[:-4] + ' ORDER BY `score` DESC'
+            execstring = execstring[:-4]  # cuts off leading ' AND'
+        if pattern:
+            execstring += (" AND (fname LIKE '{}' OR lname LIKE '{}' OR level LIKE '{}' OR id LIKE '{}')".format(pattern+'%', pattern+'%', pattern+'%', pattern+'%'))
+        execstring += ' ORDER BY score DESC'
 
         with self.conn.cursor() as c:
             c.execute(execstring)

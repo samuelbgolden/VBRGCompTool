@@ -76,6 +76,11 @@ class RouteAttemptsEntry(Frame):
         self.parent = parent
         self.isActive = False
 
+        self.font = ['Arial', -0.02]
+        self.font[1] = round(self.font[1] * self.parent.parent.parent.SCREEN_HEIGHT)
+        self.numFont = ['Arial', -0.02, 'bold']
+        self.numFont[1] = round(self.numFont[1] * self.parent.parent.parent.SCREEN_HEIGHT)
+
         self.config(bg=LBLUE)
         self.labelbg = LBLUE
         self.labelfg = 'white'
@@ -87,15 +92,19 @@ class RouteAttemptsEntry(Frame):
         self.attemptsAmt = IntVar()
         self.attemptsAmt.set(0)
 
-        self.numLabel = Label(self, text='#{}'.format(num), width=3, fg=self.labelfg, bg=self.labelbg)
-        self.minusButton = Button(self, text=self.minusIcon, fg=self.buttonfg, bg=self.buttonbg, width=2, command=self.minus)
-        self.attemptsAmtLabel = Label(self, width=2, fg=self.labelfg, bg=self.labelbg, textvariable=self.attemptsAmt)
-        self.plusButton = Button(self, text=self.plusIcon, width=2, bg=self.buttonbg, fg=self.buttonfg, command=self.plus)
+        self.numLabel = Label(self, text='#{}'.format(num), width=3, fg=self.labelfg, bg=self.labelbg, font=self.numFont)
+        self.minusButton = Button(self, text=self.minusIcon, fg=self.buttonfg, bg=self.buttonbg, width=2, command=self.minus, font=self.numFont)
+        self.attemptsAmtLabel = Label(self, width=2, fg=self.labelfg, bg=self.labelbg, textvariable=self.attemptsAmt, font=self.numFont)
+        self.plusButton = Button(self, text=self.plusIcon, width=2, bg=self.buttonbg, fg=self.buttonfg, command=self.plus, font=self.numFont)
 
-        self.numLabel.pack(side='left', expand=1, fill='both')
-        self.minusButton.pack(side='left', expand=1, fill='both')
-        self.attemptsAmtLabel.pack(side='left', expand=1, fill='both')
-        self.plusButton.pack(side='left', expand=1, fill='both')
+        self.numLabel.grid(row=0, column=0, sticky='nsew')
+        self.minusButton.grid(row=0, column=1, sticky='nsew')
+        self.attemptsAmtLabel.grid(row=0, column=2, sticky='nsew')
+        self.plusButton.grid(row=0, column=3, sticky='nsew')
+
+        for i in range(0, 4):
+            self.columnconfigure(i, weight=1)
+        self.rowconfigure(0, weight=1)
 
     def plus(self):
         if self.attemptsAmt.get() > 0:
@@ -136,7 +145,7 @@ class CompetitorSearchBox(EntryWithPlaceholder):
         self.content.trace('w', self.update_results)
 
     def update_results(self, *args):
-        self.parent.competitorTable.update_table(self.content.get())
+        self.parent.parent.parent.update_all()
 
     def clear(self):
         self.delete(0, 'end')
